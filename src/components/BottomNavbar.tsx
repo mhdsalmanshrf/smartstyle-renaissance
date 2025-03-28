@@ -13,7 +13,7 @@ const BottomNavbar = () => {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-2 px-4 z-10">
+    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border py-2 px-4 z-10">
       <div className="flex justify-around items-center max-w-md mx-auto">
         <NavItem 
           to="/outfit" 
@@ -56,7 +56,7 @@ const NavItem = ({ to, icon, label, isActive }: NavItemProps) => {
     <Link 
       to={to} 
       className={`flex flex-col items-center justify-center p-2 ${
-        isActive ? "text-fashion-primary" : "text-gray-500"
+        isActive ? "text-primary" : "text-muted-foreground"
       }`}
     >
       {icon}

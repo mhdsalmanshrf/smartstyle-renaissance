@@ -37,32 +37,32 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
 
     --primary: 173 71% 51%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-foreground: 240 5.9% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
 
-    --accent: 221 83% 40%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 173 71% 51%;
+    --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
     --ring: 173 71% 51%;
   }
 }
@@ -73,14 +73,14 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
 @layer components {
   .fashion-card {
-    @apply bg-white rounded-xl shadow-md p-4 border border-gray-100;
+    @apply bg-card text-card-foreground rounded-xl shadow-md p-4 border border-border;
   }
   
   .fashion-btn {
@@ -88,14 +88,18 @@
   }
   
   .fashion-btn-primary {
-    @apply bg-fashion-primary text-white hover:bg-opacity-90 fashion-btn;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 fashion-btn;
   }
   
   .fashion-btn-secondary {
-    @apply bg-fashion-secondary text-fashion-dark hover:bg-gray-200 fashion-btn;
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 fashion-btn;
   }
   
   .fashion-input {
-    @apply rounded-lg border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-fashion-primary;
+    @apply rounded-lg border border-input bg-background px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-ring;
+  }
+
+  .glass-morphism {
+    @apply backdrop-blur-xl bg-white/5 dark:bg-black/30 border border-white/10 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)];
   }
 }
