@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useWardrobe } from "@/contexts/WardrobeContext";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import TagSuggestions from "@/components/TagSuggestions";
 
 const clothingTypes = [
   "Shirt", "T-Shirt", "Blouse", "Sweater", 
@@ -48,7 +49,13 @@ const WardrobeAdd = () => {
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault();
-      setTags([...tags, tagInput.trim()]);
+      addTag(tagInput.trim());
+    }
+  };
+
+  const addTag = (tag: string) => {
+    if (!tags.includes(tag)) {
+      setTags([...tags, tag]);
       setTagInput("");
     }
   };
@@ -154,6 +161,13 @@ const WardrobeAdd = () => {
             </SelectContent>
           </Select>
         </div>
+        
+        {clothingType && (
+          <TagSuggestions 
+            clothingType={clothingType}
+            onSelectTag={addTag}
+          />
+        )}
         
         <div className="mb-6">
           <Label htmlFor="tags" className="mb-1 block">Style Notes & Tags</Label>
