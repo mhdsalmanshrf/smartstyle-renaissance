@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 type TagSuggestionsProps = {
   clothingType: string;
   onSelectTag: (tag: string) => void;
+  detectedTags?: string[];
 };
 
-const TagSuggestions = ({ clothingType, onSelectTag }: TagSuggestionsProps) => {
+const TagSuggestions = ({ clothingType, onSelectTag, detectedTags = [] }: TagSuggestionsProps) => {
   const getSuggestedTags = () => {
     const commonTags = ["casual", "formal", "favorite", "new"];
     
@@ -30,24 +31,42 @@ const TagSuggestions = ({ clothingType, onSelectTag }: TagSuggestionsProps) => {
     };
 
     const type = clothingType.toLowerCase();
-    return [
+    const suggestedTags = [
       ...commonTags,
       ...(tagsByType[type] || [])
     ];
+    
+    // Add AI detected tags if they're not already in the suggested tags
+    if (detectedTags.length > 0) {
+      detectedTags.forEach(tag => {
+        if (!suggestedTags.includes(tag)) {
+          suggestedTags.push(tag);
+        }
+      });
+    }
+    
+    return suggestedTags;
   };
 
   return (
     <div className="mb-4">
-      <p className="text-sm text-muted-foreground mb-2">Suggested tags:</p>
+      <p className="text-sm text-muted-foreground mb-2">
+        {detectedTags && detectedTags.length > 0 
+          ? "AI suggested tags:"
+          : "Suggested tags:"}
+      </p>
       <div className="flex flex-wrap gap-2">
         {getSuggestedTags().map((tag) => (
           <Button
             key={tag}
             variant="outline"
             size="sm"
-            className="text-xs bg-background/50 hover:bg-primary/10"
+            className={`text-xs bg-background/50 hover:bg-primary/10 ${
+              detectedTags.includes(tag) ? "border-primary text-primary" : ""
+            }`}
             onClick={() => onSelectTag(tag)}
           >
+            {detectedTags.includes(tag) && "🤖 "}
             {tag}
           </Button>
         ))}

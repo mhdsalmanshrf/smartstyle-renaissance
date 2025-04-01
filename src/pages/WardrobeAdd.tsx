@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Camera, Upload, Plus, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Camera, Upload, Plus, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,19 @@ const clothingTypes = [
   "Accessory", "Hat", "Other"
 ];
 
+// Colors that we can detect
+const detectableColors = [
+  "red", "blue", "green", "yellow", "black", 
+  "white", "purple", "pink", "orange", "brown",
+  "gray", "navy", "beige", "teal", "maroon"
+];
+
+// Patterns that we can detect
+const detectablePatterns = [
+  "striped", "checkered", "floral", "solid", "patterned",
+  "polka-dot", "plaid", "tie-dye", "graphic"
+];
+
 const WardrobeAdd = () => {
   const { addClothingItem } = useWardrobe();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -24,6 +37,10 @@ const WardrobeAdd = () => {
   const [clothingType, setClothingType] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
+  const [detectedTags, setDetectedTags] = useState<string[]>([]);
+  const [detectedColor, setDetectedColor] = useState<string | null>(null);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -33,17 +50,64 @@ const WardrobeAdd = () => {
       fileReader.onload = () => {
         const url = fileReader.result as string;
         setPreviewUrl(url);
+        setDetectedTags([]);
+        setDetectedColor(null);
+        setAnalysisComplete(false);
       };
       fileReader.readAsDataURL(file);
     }
   };
 
-  const analyzeClothing = () => {
-    // In a real app, this would call an AI API to analyze the clothing color
-    // For now, we'll just return a mock value
-    return {
-      color: "blue"
-    };
+  // Automatically analyze the image when a new one is uploaded
+  useEffect(() => {
+    if (previewUrl && !analysisComplete) {
+      analyzeClothing();
+    }
+  }, [previewUrl]);
+
+  const analyzeClothing = async () => {
+    if (!previewUrl) return;
+    
+    setAnalyzing(true);
+    try {
+      // In a real app, this would call an AI API to analyze the clothing
+      // We're simulating AI analysis with a delayed response for demo purposes
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // For this demo, we're generating random "AI" results
+      // In a real app, you would replace this with actual API calls to Vision models
+      
+      // 1. Detect the likely clothing type
+      const randomTypeIndex = Math.floor(Math.random() * clothingTypes.length);
+      const detectedType = clothingTypes[randomTypeIndex].toLowerCase();
+      
+      // 2. Detect colors
+      const randomColorIndex = Math.floor(Math.random() * detectableColors.length);
+      const detectedColor = detectableColors[randomColorIndex];
+      setDetectedColor(detectedColor);
+      
+      // 3. Detect patterns and other attributes
+      const randomPatternIndex = Math.floor(Math.random() * detectablePatterns.length);
+      const detectedPattern = detectablePatterns[randomPatternIndex];
+      
+      // 4. Set detected tags
+      const aiTags = [detectedColor, detectedPattern];
+      setDetectedTags(aiTags);
+      
+      // 5. Auto-set the clothing type if not already set
+      if (!clothingType) {
+        setClothingType(detectedType);
+        toast.success(`AI detected this as: ${detectedType}`);
+      }
+      
+      setAnalysisComplete(true);
+      toast.success("Image analysis complete");
+    } catch (error) {
+      console.error("Error analyzing clothing:", error);
+      toast.error("Failed to analyze image");
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -70,15 +134,12 @@ const WardrobeAdd = () => {
       return;
     }
 
-    // Analyze clothing (mocked)
-    const analysis = analyzeClothing();
-
-    // Add to wardrobe
+    // Add to wardrobe with the detected color
     addClothingItem({
       imageUrl: previewUrl,
       type: clothingType,
       tags: tags,
-      color: analysis.color
+      color: detectedColor || "unknown"
     });
 
     // Reset form
@@ -86,6 +147,9 @@ const WardrobeAdd = () => {
     setPreviewUrl(null);
     setClothingType("");
     setTags([]);
+    setDetectedTags([]);
+    setDetectedColor(null);
+    setAnalysisComplete(false);
     
     toast.success("Item added to your wardrobe!");
   };
@@ -110,11 +174,27 @@ const WardrobeAdd = () => {
                 onClick={() => {
                   setPreviewUrl(null);
                   setSelectedFile(null);
+                  setDetectedTags([]);
+                  setDetectedColor(null);
+                  setAnalysisComplete(false);
                 }}
                 className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md"
               >
                 <X size={20} className="text-gray-600" />
               </button>
+              {analyzing && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
+                  <div className="text-white flex flex-col items-center">
+                    <Sparkles size={40} className="animate-pulse mb-2" />
+                    <p>AI analyzing your image...</p>
+                  </div>
+                </div>
+              )}
+              {detectedColor && (
+                <div className="absolute bottom-5 left-5 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                  🤖 Detected: {detectedColor}
+                </div>
+              )}
             </div>
           ) : (
             <div className="w-full h-64 rounded-lg bg-gray-100 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 mb-4">
@@ -166,6 +246,7 @@ const WardrobeAdd = () => {
           <TagSuggestions 
             clothingType={clothingType}
             onSelectTag={addTag}
+            detectedTags={detectedTags}
           />
         )}
         
