@@ -1,21 +1,27 @@
 
 import { useState } from "react";
 import { useWardrobe } from "@/contexts/WardrobeContext";
-import { Search, Heart, ShoppingBag, ExternalLink } from "lucide-react";
+import { Search, Heart, ShoppingBag, ExternalLink, Sparkles, Zap, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Toggle } from "@/components/ui/toggle";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import WardrobeGapAnalysis from "@/components/WardrobeGapAnalysis";
 
 const categories = ["All", "Tops", "Bottoms", "Shoes", "Accessories"];
+const smartFilters = ["Smart Matches", "Closet Complete", "Upgrade Suggestions", "Gap Fillers"];
 
 const SmartShopping = () => {
-  const { shoppingItems } = useWardrobe();
+  const { shoppingItems, wardrobe } = useWardrobe();
   const [activeCategory, setActiveCategory] = useState("All");
+  const [activeSmartFilter, setActiveSmartFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [wishlist, setWishlist] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState("discover");
 
   const filteredItems = shoppingItems.filter(item => {
+    // Apply category filter
     if (activeCategory !== "All") {
       const categoryMap: Record<string, string[]> = {
         "Tops": ["tshirt", "shirt", "blouse", "sweater"],
@@ -32,6 +38,20 @@ const SmartShopping = () => {
       if (!matchesCategory) return false;
     }
     
+    // Apply smart filter
+    if (activeSmartFilter) {
+      if (activeSmartFilter === "Smart Matches" && (!item.matchesWithItems || item.matchesWithItems.length === 0)) {
+        return false;
+      }
+      
+      if (activeSmartFilter === "Gap Fillers" && !item.fillsGap) {
+        return false;
+      }
+      
+      // For demo purposes, we'll just show all items for other smart filters
+    }
+    
+    // Apply search query
     if (searchQuery) {
       const lowercaseQuery = searchQuery.toLowerCase();
       const matchesQuery = 
@@ -61,6 +81,18 @@ const SmartShopping = () => {
     toast.success(`Opening store for ${item.name}`);
   };
 
+  // Simulate finding matching items from the wardrobe
+  const getMatchingWardrobeItems = (item: typeof shoppingItems[0]) => {
+    // In a real app, this would use the color harmony and outfit intelligence algorithms
+    if (!item.matchesWithItems || wardrobe.length === 0) return [];
+    
+    // For demo, return 1-2 random wardrobe items
+    const count = Math.floor(Math.random() * 2) + 1;
+    return wardrobe
+      .sort(() => 0.5 - Math.random())
+      .slice(0, Math.min(count, wardrobe.length));
+  };
+
   return (
     <div className="pb-20 animate-fade-in">
       <h1 className="text-3xl font-bold mb-2 text-fashion-dark">Shop Matching Styles</h1>
@@ -68,30 +100,62 @@ const SmartShopping = () => {
         AI-recommended products based on your style
       </p>
       
-      <div className="mb-6">
-        <div className="relative mb-4">
-          <Search size={18} className="absolute left-3 top-3 text-gray-400" />
-          <Input
-            placeholder="Search products..."
-            className="pl-10 fashion-input"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+      <Tabs defaultValue="discover" className="mb-6" onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="discover">Discover</TabsTrigger>
+          <TabsTrigger value="smart">Smart Shopping</TabsTrigger>
+        </TabsList>
         
-        <div className="flex gap-2 overflow-x-auto py-2 no-scrollbar">
-          {categories.map(category => (
-            <Toggle
-              key={category}
-              pressed={activeCategory === category}
-              onPressedChange={() => setActiveCategory(category)}
-              className="rounded-full px-4 py-1 text-sm border border-gray-200 data-[state=on]:bg-fashion-primary data-[state=on]:text-white"
-            >
-              {category}
-            </Toggle>
-          ))}
-        </div>
-      </div>
+        <TabsContent value="discover">
+          <div className="mb-6">
+            <div className="relative mb-4">
+              <Search size={18} className="absolute left-3 top-3 text-gray-400" />
+              <Input
+                placeholder="Search products..."
+                className="pl-10 fashion-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex gap-2 overflow-x-auto py-2 no-scrollbar">
+              {categories.map(category => (
+                <Toggle
+                  key={category}
+                  pressed={activeCategory === category}
+                  onPressedChange={() => setActiveCategory(category)}
+                  className="rounded-full px-4 py-1 text-sm border border-gray-200 data-[state=on]:bg-fashion-primary data-[state=on]:text-white"
+                >
+                  {category}
+                </Toggle>
+              ))}
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="smart">
+          <WardrobeGapAnalysis />
+          
+          <div className="mb-6">
+            <h3 className="text-sm font-medium mb-2 flex items-center gap-1.5">
+              <Sparkles size={14} />
+              Smart Filters
+            </h3>
+            <div className="flex gap-2 overflow-x-auto py-2 no-scrollbar">
+              {smartFilters.map(filter => (
+                <Toggle
+                  key={filter}
+                  pressed={activeSmartFilter === filter}
+                  onPressedChange={() => setActiveSmartFilter(filter === activeSmartFilter ? "" : filter)}
+                  className="rounded-full px-4 py-1 text-sm border border-gray-200 data-[state=on]:bg-fashion-primary data-[state=on]:text-white"
+                >
+                  {filter}
+                </Toggle>
+              ))}
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
       
       <div className="grid grid-cols-2 gap-4">
         {filteredItems.map(item => (
@@ -111,15 +175,58 @@ const SmartShopping = () => {
                   className={wishlist.includes(item.id) ? "text-red-500 fill-red-500" : "text-gray-500"} 
                 />
               </button>
+              
+              {activeTab === "smart" && (
+                <div className="absolute top-2 left-2">
+                  <Badge variant="secondary" className="flex items-center gap-1 bg-white/90 text-fashion-primary text-xs">
+                    <Zap size={10} className="text-yellow-500" />
+                    Smart Match
+                  </Badge>
+                </div>
+              )}
             </div>
             
             <h3 className="font-medium mb-1 leading-tight">{item.name}</h3>
             <p className="text-fashion-primary font-bold mb-1">${item.price.toFixed(2)}</p>
-            <p className="text-xs text-gray-500 mb-3">Color: {item.color}</p>
+            <p className="text-xs text-gray-500 mb-2">Color: {item.color}</p>
             
-            <div className="bg-gray-50 px-2 py-1 rounded-md mb-3">
-              <p className="text-xs">{item.matchesDescription}</p>
-            </div>
+            {/* Show matching items if in Smart tab */}
+            {activeTab === "smart" && (
+              <div className="bg-gray-50 px-3 py-2 rounded-md mb-3">
+                <p className="text-xs font-medium mb-1.5 flex items-center gap-1">
+                  <Link2 size={10} />
+                  Matches with your:
+                </p>
+                <div className="flex gap-1 overflow-x-auto no-scrollbar">
+                  {getMatchingWardrobeItems(item).map(wardrobeItem => (
+                    <div key={wardrobeItem.id} className="relative min-w-9 w-9 h-9 rounded-full border">
+                      <img 
+                        src={wardrobeItem.imageUrl} 
+                        alt={wardrobeItem.type} 
+                        className="w-full h-full object-cover rounded-full" 
+                      />
+                      <span className="absolute -bottom-1 -right-1 bg-white text-[8px] px-1 rounded-full border border-gray-200 capitalize">
+                        {wardrobeItem.type}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Regular match description */}
+            {activeTab === "discover" && (
+              <div className="bg-gray-50 px-2 py-1 rounded-md mb-3">
+                <p className="text-xs">{item.matchesDescription}</p>
+              </div>
+            )}
+            
+            {/* For Gap Fillers, show what gap it fills */}
+            {activeSmartFilter === "Gap Fillers" && item.fillsGap && (
+              <div className="bg-fashion-secondary/20 px-2 py-1 rounded-md mb-3">
+                <p className="text-xs font-medium">Fills gap: {item.fillsGap}</p>
+              </div>
+            )}
             
             <div className="flex gap-2">
               <Button 
