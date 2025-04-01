@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import NotFound from "./pages/NotFound";
 import BottomNavbar from "./components/BottomNavbar";
@@ -24,24 +24,22 @@ const App = () => (
         <WardrobeProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
-            <div className="flex flex-col min-h-screen bg-background">
-              <div className="fixed top-4 right-4 z-50">
-                <ThemeToggle />
-              </div>
-              <main className="flex-1 container max-w-md mx-auto p-4">
-                <Routes>
-                  <Route path="/" element={<OnboardingSelfie />} />
-                  <Route path="/wardrobe/add" element={<WardrobeAdd />} />
-                  <Route path="/outfit" element={<OutfitSuggestion />} />
-                  <Route path="/shop" element={<SmartShopping />} />
-                  <Route path="/wardrobe" element={<WardrobeManager />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-              <BottomNavbar />
+          <div className="flex flex-col min-h-screen bg-background">
+            <div className="fixed top-4 right-4 z-50">
+              <ThemeToggle />
             </div>
-          </BrowserRouter>
+            <main className="flex-1 container max-w-md mx-auto p-4">
+              <Routes>
+                <Route path="/" element={<OnboardingSelfie />} />
+                <Route path="/wardrobe/add" element={<WardrobeAdd />} />
+                <Route path="/outfit" element={<OutfitSuggestion />} />
+                <Route path="/shop" element={<SmartShopping />} />
+                <Route path="/wardrobe" element={<WardrobeManager />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </main>
+            <BottomNavbar />
+          </div>
         </WardrobeProvider>
       </ThemeProvider>
     </TooltipProvider>
