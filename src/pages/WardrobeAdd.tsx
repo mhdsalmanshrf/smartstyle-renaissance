@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Camera, Upload, Plus, X, Sparkles } from "lucide-react";
+import { Camera, Upload, Plus, X, Sparkles, Image, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { useWardrobe } from "@/contexts/WardrobeContext";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TagSuggestions from "@/components/TagSuggestions";
+import { removeBackground, loadImage } from "@/utils/backgroundRemoval";
 
 const clothingTypes = [
   "Shirt", "T-Shirt", "Blouse", "Sweater", 
@@ -41,8 +42,10 @@ const WardrobeAdd = () => {
   const [detectedTags, setDetectedTags] = useState<string[]>([]);
   const [detectedColor, setDetectedColor] = useState<string | null>(null);
   const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [removingBackground, setRemovingBackground] = useState(false);
+  const [backgroundRemoved, setBackgroundRemoved] = useState(false);
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
@@ -53,6 +56,7 @@ const WardrobeAdd = () => {
         setDetectedTags([]);
         setDetectedColor(null);
         setAnalysisComplete(false);
+        setBackgroundRemoved(false);
       };
       fileReader.readAsDataURL(file);
     }
@@ -110,6 +114,37 @@ const WardrobeAdd = () => {
     }
   };
 
+  const handleRemoveBackground = async () => {
+    if (!selectedFile || !previewUrl) return;
+    
+    setRemovingBackground(true);
+    try {
+      toast.info("Removing image background...");
+      
+      // Load the image
+      const img = await loadImage(selectedFile);
+      
+      // Remove the background
+      const processedImageBlob = await removeBackground(img);
+      
+      // Update the preview with the processed image
+      const newPreviewUrl = URL.createObjectURL(processedImageBlob);
+      setPreviewUrl(newPreviewUrl);
+      
+      // Update the selected file with the new image
+      const newFile = new File([processedImageBlob], selectedFile.name, { type: 'image/png' });
+      setSelectedFile(newFile);
+      
+      setBackgroundRemoved(true);
+      toast.success("Background removed successfully");
+    } catch (error) {
+      console.error("Error removing background:", error);
+      toast.error("Failed to remove background");
+    } finally {
+      setRemovingBackground(false);
+    }
+  };
+
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault();
@@ -150,6 +185,7 @@ const WardrobeAdd = () => {
     setDetectedTags([]);
     setDetectedColor(null);
     setAnalysisComplete(false);
+    setBackgroundRemoved(false);
     
     toast.success("Item added to your wardrobe!");
   };
@@ -177,6 +213,7 @@ const WardrobeAdd = () => {
                   setDetectedTags([]);
                   setDetectedColor(null);
                   setAnalysisComplete(false);
+                  setBackgroundRemoved(false);
                 }}
                 className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md"
               >
@@ -190,9 +227,23 @@ const WardrobeAdd = () => {
                   </div>
                 </div>
               )}
+              {removingBackground && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
+                  <div className="text-white flex flex-col items-center">
+                    <Loader2 size={40} className="animate-spin mb-2" />
+                    <p>Removing background...</p>
+                  </div>
+                </div>
+              )}
               {detectedColor && (
                 <div className="absolute bottom-5 left-5 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
                   🤖 Detected: {detectedColor}
+                </div>
+              )}
+              {backgroundRemoved && (
+                <div className="absolute top-2 left-2 bg-green-500/90 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                  <Image size={16} className="mr-1" />
+                  Background removed
                 </div>
               )}
             </div>
@@ -226,6 +277,17 @@ const WardrobeAdd = () => {
               </div>
             </div>
           )}
+          
+          {previewUrl && !backgroundRemoved && !removingBackground && (
+            <Button 
+              onClick={handleRemoveBackground} 
+              variant="outline" 
+              className="w-full mt-2 border-dashed border-primary/50 text-primary"
+            >
+              <Image size={16} className="mr-2" />
+              Remove Background
+            </Button>
+          )}
         </div>
         
         <div className="mb-4">
@@ -247,6 +309,7 @@ const WardrobeAdd = () => {
             clothingType={clothingType}
             onSelectTag={addTag}
             detectedTags={detectedTags}
+            color={detectedColor || undefined}
           />
         )}
         
