@@ -8,7 +8,7 @@ import { useWardrobe } from "@/contexts/WardrobeContext";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TagSuggestions from "@/components/TagSuggestions";
-import { removeBackground, loadImage } from "@/utils/backgroundRemoval";
+import { detectOutfitColor, loadImage } from "@/utils/backgroundRemoval";
 
 const clothingTypes = [
   "Shirt", "T-Shirt", "Blouse", "Sweater", 
@@ -42,9 +42,8 @@ const WardrobeAdd = () => {
   const [detectedTags, setDetectedTags] = useState<string[]>([]);
   const [detectedColor, setDetectedColor] = useState<string | null>(null);
   const [analysisComplete, setAnalysisComplete] = useState(false);
-  const [removingBackground, setRemovingBackground] = useState(false);
-  const [backgroundRemoved, setBackgroundRemoved] = useState(false);
-  
+  const [detectingColor, setDetectingColor] = useState(false);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -56,7 +55,6 @@ const WardrobeAdd = () => {
         setDetectedTags([]);
         setDetectedColor(null);
         setAnalysisComplete(false);
-        setBackgroundRemoved(false);
       };
       fileReader.readAsDataURL(file);
     }
@@ -74,9 +72,21 @@ const WardrobeAdd = () => {
     
     setAnalyzing(true);
     try {
+      // Detect the dominant color of the outfit
+      if (selectedFile) {
+        const img = await loadImage(selectedFile);
+        const detectedColor = await detectOutfitColor(img);
+        setDetectedColor(detectedColor);
+        
+        // Add the detected color to tags
+        if (detectedColor !== "unknown") {
+          setDetectedTags(prev => [...prev, detectedColor]);
+        }
+      }
+      
       // In a real app, this would call an AI API to analyze the clothing
       // We're simulating AI analysis with a delayed response for demo purposes
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // For this demo, we're generating random "AI" results
       // In a real app, you would replace this with actual API calls to Vision models
@@ -85,20 +95,20 @@ const WardrobeAdd = () => {
       const randomTypeIndex = Math.floor(Math.random() * clothingTypes.length);
       const detectedType = clothingTypes[randomTypeIndex].toLowerCase();
       
-      // 2. Detect colors
-      const randomColorIndex = Math.floor(Math.random() * detectableColors.length);
-      const detectedColor = detectableColors[randomColorIndex];
-      setDetectedColor(detectedColor);
-      
-      // 3. Detect patterns and other attributes
+      // 2. Detect patterns and other attributes
       const randomPatternIndex = Math.floor(Math.random() * detectablePatterns.length);
       const detectedPattern = detectablePatterns[randomPatternIndex];
       
-      // 4. Set detected tags
-      const aiTags = [detectedColor, detectedPattern];
-      setDetectedTags(aiTags);
+      // 3. Set detected tags (include the pattern but not the color as it's already added)
+      setDetectedTags(prev => {
+        // Don't add duplicates
+        if (!prev.includes(detectedPattern)) {
+          return [...prev, detectedPattern];
+        }
+        return prev;
+      });
       
-      // 5. Auto-set the clothing type if not already set
+      // 4. Auto-set the clothing type if not already set
       if (!clothingType) {
         setClothingType(detectedType);
         toast.success(`AI detected this as: ${detectedType}`);
@@ -114,34 +124,34 @@ const WardrobeAdd = () => {
     }
   };
 
-  const handleRemoveBackground = async () => {
+  const handleDetectOutfitColor = async () => {
     if (!selectedFile || !previewUrl) return;
     
-    setRemovingBackground(true);
+    setDetectingColor(true);
     try {
-      toast.info("Removing image background...");
+      toast.info("Detecting outfit color...");
       
       // Load the image
       const img = await loadImage(selectedFile);
       
-      // Remove the background
-      const processedImageBlob = await removeBackground(img);
+      // Detect the outfit color
+      const color = await detectOutfitColor(img);
+      setDetectedColor(color);
       
-      // Update the preview with the processed image
-      const newPreviewUrl = URL.createObjectURL(processedImageBlob);
-      setPreviewUrl(newPreviewUrl);
+      // Add color to detected tags if not already there
+      setDetectedTags(prev => {
+        if (!prev.includes(color) && color !== "unknown") {
+          return [...prev, color];
+        }
+        return prev;
+      });
       
-      // Update the selected file with the new image
-      const newFile = new File([processedImageBlob], selectedFile.name, { type: 'image/png' });
-      setSelectedFile(newFile);
-      
-      setBackgroundRemoved(true);
-      toast.success("Background removed successfully");
+      toast.success(`Detected color: ${color}`);
     } catch (error) {
-      console.error("Error removing background:", error);
-      toast.error("Failed to remove background");
+      console.error("Error detecting outfit color:", error);
+      toast.error("Failed to detect outfit color");
     } finally {
-      setRemovingBackground(false);
+      setDetectingColor(false);
     }
   };
 
@@ -185,7 +195,6 @@ const WardrobeAdd = () => {
     setDetectedTags([]);
     setDetectedColor(null);
     setAnalysisComplete(false);
-    setBackgroundRemoved(false);
     
     toast.success("Item added to your wardrobe!");
   };
@@ -213,7 +222,6 @@ const WardrobeAdd = () => {
                   setDetectedTags([]);
                   setDetectedColor(null);
                   setAnalysisComplete(false);
-                  setBackgroundRemoved(false);
                 }}
                 className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md"
               >
@@ -227,23 +235,17 @@ const WardrobeAdd = () => {
                   </div>
                 </div>
               )}
-              {removingBackground && (
+              {detectingColor && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
                   <div className="text-white flex flex-col items-center">
                     <Loader2 size={40} className="animate-spin mb-2" />
-                    <p>Removing background...</p>
+                    <p>Detecting outfit color...</p>
                   </div>
                 </div>
               )}
               {detectedColor && (
                 <div className="absolute bottom-5 left-5 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                  🤖 Detected: {detectedColor}
-                </div>
-              )}
-              {backgroundRemoved && (
-                <div className="absolute top-2 left-2 bg-green-500/90 text-white px-3 py-1 rounded-full text-sm flex items-center">
-                  <Image size={16} className="mr-1" />
-                  Background removed
+                  🤖 Detected color: {detectedColor}
                 </div>
               )}
             </div>
@@ -278,14 +280,14 @@ const WardrobeAdd = () => {
             </div>
           )}
           
-          {previewUrl && !backgroundRemoved && !removingBackground && (
+          {previewUrl && !detectingColor && (
             <Button 
-              onClick={handleRemoveBackground} 
+              onClick={handleDetectOutfitColor} 
               variant="outline" 
               className="w-full mt-2 border-dashed border-primary/50 text-primary"
             >
-              <Image size={16} className="mr-2" />
-              Remove Background
+              <Sparkles size={16} className="mr-2" />
+              Detect Outfit Color
             </Button>
           )}
         </div>
