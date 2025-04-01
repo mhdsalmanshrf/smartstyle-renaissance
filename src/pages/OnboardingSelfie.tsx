@@ -11,6 +11,7 @@ const OnboardingSelfie = () => {
   const { userProfile, setUserProfile } = useWardrobe();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(userProfile.selfieUrl);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -26,19 +27,33 @@ const OnboardingSelfie = () => {
   };
 
   const analyzeSelfie = () => {
-    // In a real app, this would call an AI API to analyze skin tone, eye color, etc.
-    // For now, we'll just set mock values
-    return {
-      skinTone: "warm",
-      hairColor: "brown",
-      eyeColor: "brown"
-    };
+    // Simulate AI analysis with loading state
+    setIsAnalyzing(true);
+    
+    // In a real app, this would call a computer vision API
+    // For demo, we'll simulate a delay and return mock values
+    return new Promise<{
+      skinTone: string;
+      hairColor: string;
+      eyeColor: string;
+    }>(resolve => {
+      setTimeout(() => {
+        // These would be detected by AI in a real app
+        const analysis = {
+          skinTone: ["warm", "cool", "neutral", "olive", "deep"][Math.floor(Math.random() * 5)],
+          hairColor: ["black", "brown", "blonde", "red", "gray"][Math.floor(Math.random() * 5)],
+          eyeColor: ["brown", "blue", "green", "hazel", "gray"][Math.floor(Math.random() * 5)]
+        };
+        setIsAnalyzing(false);
+        resolve(analysis);
+      }, 1500);
+    });
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (previewUrl) {
-      // Analyze the selfie with AI (mocked for now)
-      const analysis = analyzeSelfie();
+      // Analyze the selfie with AI
+      const analysis = await analyzeSelfie();
       
       // Update user profile
       setUserProfile({
@@ -48,7 +63,7 @@ const OnboardingSelfie = () => {
         eyeColor: analysis.eyeColor
       });
       
-      toast.success("Profile created successfully!");
+      toast.success(`Profile created with ${analysis.skinTone} skin tone, ${analysis.hairColor} hair, and ${analysis.eyeColor} eyes!`);
       navigate("/wardrobe/add");
     }
   };
@@ -57,10 +72,10 @@ const OnboardingSelfie = () => {
     <div className="flex flex-col items-center justify-center min-h-[80vh] animate-fade-in">
       <h1 className="text-3xl font-bold mb-2 text-fashion-dark">Upload Your Selfie</h1>
       <p className="text-gray-600 mb-8 text-center">
-        We'll personalize your style based on your look
+        We'll analyze your features and personalize style recommendations
       </p>
       
-      <div className="mb-8 relative">
+      <div className="mb-6 relative">
         {previewUrl ? (
           <div className="w-48 h-48 rounded-full overflow-hidden bg-gray-100 border-4 border-fashion-primary">
             <img 
@@ -74,6 +89,21 @@ const OnboardingSelfie = () => {
             <User size={64} className="text-gray-400" />
           </div>
         )}
+      </div>
+      
+      <div className="w-full max-w-xs mb-6">
+        <div className="text-sm font-medium mb-2">AI will analyze:</div>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="bg-background border rounded-lg p-2">
+            <div className="text-xs text-muted-foreground">Skin tone</div>
+          </div>
+          <div className="bg-background border rounded-lg p-2">
+            <div className="text-xs text-muted-foreground">Hair color</div>
+          </div>
+          <div className="bg-background border rounded-lg p-2">
+            <div className="text-xs text-muted-foreground">Eye color</div>
+          </div>
+        </div>
       </div>
       
       <div className="flex gap-4 mb-8">
@@ -104,9 +134,9 @@ const OnboardingSelfie = () => {
       <Button 
         className="fashion-btn-primary w-full max-w-xs"
         onClick={handleContinue}
-        disabled={!previewUrl}
+        disabled={!previewUrl || isAnalyzing}
       >
-        Continue
+        {isAnalyzing ? 'Analyzing...' : 'Continue'}
       </Button>
     </div>
   );

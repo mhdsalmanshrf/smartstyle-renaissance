@@ -1,18 +1,48 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useWardrobe } from "@/contexts/WardrobeContext";
-import { RefreshCw, Check, Info, Cloud, Sun } from "lucide-react";
+import { RefreshCw, Check, Info, Cloud, Sun, User } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 const OutfitSuggestion = () => {
-  const { wardrobe, currentOutfit, generateOutfit, saveOutfitAsWorn } = useWardrobe();
+  const { wardrobe, currentOutfit, generateOutfit, saveOutfitAsWorn, userProfile } = useWardrobe();
+  const [outfitReason, setOutfitReason] = useState<string>("");
 
   useEffect(() => {
     if (wardrobe.length > 0 && !currentOutfit) {
       generateOutfit();
     }
   }, [wardrobe, currentOutfit, generateOutfit]);
+
+  useEffect(() => {
+    if (currentOutfit && userProfile) {
+      // Generate personalized reason based on user features
+      generateOutfitReason();
+    }
+  }, [currentOutfit, userProfile]);
+
+  const generateOutfitReason = () => {
+    if (!currentOutfit || !userProfile.skinTone) return;
+
+    // Create personalized explanation based on user features
+    const reasons = [
+      `This outfit complements your ${userProfile.skinTone} skin tone`,
+      `The colors work well with your ${userProfile.hairColor} hair`,
+      `The color palette enhances your ${userProfile.eyeColor} eyes`
+    ];
+
+    // Add weather-appropriate reason
+    reasons.push("The style is perfect for today's weather");
+
+    // Join reasons with commas and "and" for the last one
+    const reasonsText = reasons.length > 1 
+      ? `${reasons.slice(0, -1).join(", ")} and ${reasons[reasons.length - 1]}`
+      : reasons[0];
+
+    setOutfitReason(reasonsText + ".");
+  };
 
   const handleRefresh = () => {
     generateOutfit();
@@ -49,12 +79,44 @@ const OutfitSuggestion = () => {
     <div className="pb-20 animate-fade-in">
       <h1 className="text-3xl font-bold mb-2 text-fashion-dark">Today's Outfit</h1>
       
-      <div className="flex items-center gap-2 mb-6 text-gray-600">
+      <div className="flex items-center gap-2 mb-4 text-gray-600">
         <div className="bg-blue-100 text-blue-600 rounded-full p-1.5">
           <Sun size={16} />
         </div>
         <span className="text-sm">72°F - Sunny - Perfect for this look</span>
       </div>
+      
+      {userProfile.selfieUrl && (
+        <div className="flex items-center gap-3 mb-6 p-3 bg-background/50 rounded-lg border">
+          <div className="w-10 h-10 rounded-full overflow-hidden">
+            <img 
+              src={userProfile.selfieUrl} 
+              alt="Your profile" 
+              className="w-full h-full object-cover" 
+            />
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-medium">Your features</div>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {userProfile.skinTone && (
+                <Badge variant="outline" className="text-xs">
+                  {userProfile.skinTone} skin
+                </Badge>
+              )}
+              {userProfile.hairColor && (
+                <Badge variant="outline" className="text-xs">
+                  {userProfile.hairColor} hair
+                </Badge>
+              )}
+              {userProfile.eyeColor && (
+                <Badge variant="outline" className="text-xs">
+                  {userProfile.eyeColor} eyes
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       {currentOutfit && (
         <div className="fashion-card mb-6 animate-slide-up">
@@ -90,8 +152,7 @@ const OutfitSuggestion = () => {
               <div>
                 <h3 className="font-medium mb-1">Why This Outfit</h3>
                 <p className="text-sm text-gray-600">
-                  This combination matches your {wardrobe[0]?.color} tones and creates a balanced silhouette. 
-                  The colors complement your skin tone, and the style aligns with today's weather.
+                  {outfitReason || "This outfit has been selected based on your personal style and today's weather."}
                 </p>
               </div>
             </div>

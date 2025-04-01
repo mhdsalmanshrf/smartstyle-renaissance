@@ -1,13 +1,22 @@
 
 import { Button } from "@/components/ui/button";
+import { useWardrobe } from "@/contexts/WardrobeContext";
 
 type TagSuggestionsProps = {
   clothingType: string;
   onSelectTag: (tag: string) => void;
   detectedTags?: string[];
+  color?: string;
 };
 
-const TagSuggestions = ({ clothingType, onSelectTag, detectedTags = [] }: TagSuggestionsProps) => {
+const TagSuggestions = ({ 
+  clothingType, 
+  onSelectTag, 
+  detectedTags = [],
+  color
+}: TagSuggestionsProps) => {
+  const { userProfile } = useWardrobe();
+  
   const getSuggestedTags = () => {
     const commonTags = ["casual", "formal", "favorite", "new"];
     
@@ -30,10 +39,33 @@ const TagSuggestions = ({ clothingType, onSelectTag, detectedTags = [] }: TagSug
       "hat": ["baseball", "beanie", "sun", "fedora", "snapback"],
     };
 
+    // Feature-based tags
+    const featureTags: string[] = [];
+    
+    if (userProfile.skinTone) {
+      // Add complementary color tags based on skin tone
+      if (userProfile.skinTone === "warm") {
+        featureTags.push("earth-tones", "warm-colors");
+      } else if (userProfile.skinTone === "cool") {
+        featureTags.push("cool-colors", "jewel-tones");
+      } else if (userProfile.skinTone === "deep") {
+        featureTags.push("bright-colors", "high-contrast");
+      } else if (userProfile.skinTone === "olive") {
+        featureTags.push("muted-colors", "olive-friendly");
+      } else {
+        featureTags.push("neutral-colors");
+      }
+    }
+    
+    if (color) {
+      featureTags.push(color);
+    }
+
     const type = clothingType.toLowerCase();
     const suggestedTags = [
       ...commonTags,
-      ...(tagsByType[type] || [])
+      ...(tagsByType[type] || []),
+      ...featureTags
     ];
     
     // Add AI detected tags if they're not already in the suggested tags
@@ -46,6 +78,24 @@ const TagSuggestions = ({ clothingType, onSelectTag, detectedTags = [] }: TagSug
     }
     
     return suggestedTags;
+  };
+
+  const getTagClassName = (tag: string) => {
+    let className = "text-xs bg-background/50 hover:bg-primary/10";
+    
+    // Highlight AI detected tags
+    if (detectedTags.includes(tag)) {
+      className += " border-primary text-primary";
+    }
+    
+    // Highlight feature-based tags
+    if (userProfile.skinTone && 
+        (tag.includes("tone") || tag.includes("color") || 
+         tag === userProfile.skinTone || tag === userProfile.hairColor)) {
+      className += " border-amber-500 text-amber-600 dark:text-amber-400";
+    }
+    
+    return className;
   };
 
   return (
@@ -61,12 +111,12 @@ const TagSuggestions = ({ clothingType, onSelectTag, detectedTags = [] }: TagSug
             key={tag}
             variant="outline"
             size="sm"
-            className={`text-xs bg-background/50 hover:bg-primary/10 ${
-              detectedTags.includes(tag) ? "border-primary text-primary" : ""
-            }`}
+            className={getTagClassName(tag)}
             onClick={() => onSelectTag(tag)}
           >
             {detectedTags.includes(tag) && "🤖 "}
+            {(tag === userProfile.skinTone || tag === userProfile.hairColor || 
+              tag.includes("tone") || tag.includes("color")) && "✨ "}
             {tag}
           </Button>
         ))}
