@@ -5,6 +5,8 @@ import { Camera, Upload, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWardrobe } from "@/contexts/WardrobeContext";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const OnboardingSelfie = () => {
   const navigate = useNavigate();
@@ -12,6 +14,8 @@ const OnboardingSelfie = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(userProfile.selfieUrl);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [displayName, setDisplayName] = useState(userProfile.displayName || "");
+  const [region, setRegion] = useState(userProfile.region || "");
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -60,7 +64,9 @@ const OnboardingSelfie = () => {
         selfieUrl: previewUrl,
         skinTone: analysis.skinTone,
         hairColor: analysis.hairColor,
-        eyeColor: analysis.eyeColor
+        eyeColor: analysis.eyeColor,
+        displayName,
+        region
       });
       
       toast.success(`Profile created with ${analysis.skinTone} skin tone, ${analysis.hairColor} hair, and ${analysis.eyeColor} eyes!`);
@@ -70,7 +76,7 @@ const OnboardingSelfie = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] animate-fade-in">
-      <h1 className="text-3xl font-bold mb-2 text-fashion-dark">Upload Your Selfie</h1>
+      <h1 className="text-3xl font-bold mb-2 text-fashion-dark">Create Your Profile</h1>
       <p className="text-gray-600 mb-8 text-center">
         We'll analyze your features and personalize style recommendations
       </p>
@@ -102,6 +108,32 @@ const OnboardingSelfie = () => {
           </div>
           <div className="bg-background border rounded-lg p-2">
             <div className="text-xs text-muted-foreground">Eye color</div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="w-full max-w-xs mb-4">
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="displayName">Your Name (Optional)</Label>
+            <Input 
+              id="displayName" 
+              value={displayName} 
+              onChange={(e) => setDisplayName(e.target.value)} 
+              placeholder="How should we call you?"
+              className="mt-1"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="region">Your Region (Optional)</Label>
+            <Input 
+              id="region" 
+              value={region} 
+              onChange={(e) => setRegion(e.target.value)} 
+              placeholder="E.g., US, Europe, Asia"
+              className="mt-1"
+            />
           </div>
         </div>
       </div>

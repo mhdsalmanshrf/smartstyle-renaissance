@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +14,7 @@ import WardrobeManager from "./pages/WardrobeManager";
 import LaundryTracker from "./pages/LaundryTracker";
 import { WardrobeProvider } from "./contexts/WardrobeContext";
 import ThemeToggle from "./components/ThemeToggle";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +37,7 @@ const App = () => (
                 <Route path="/shop" element={<SmartShopping />} />
                 <Route path="/wardrobe" element={<WardrobeManager />} />
                 <Route path="/laundry" element={<LaundryTracker />} />
+                <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

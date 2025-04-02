@@ -7,6 +7,9 @@ type UserProfile = {
   skinTone: string | null;
   hairColor: string | null;
   eyeColor: string | null;
+  displayName?: string;
+  region?: string;
+  preferredStyle?: string;
 };
 
 export type ClothingStatus = "available" | "in-laundry" | "dirty" | "fresh";
@@ -93,6 +96,9 @@ const defaultUserProfile: UserProfile = {
   skinTone: null,
   hairColor: null,
   eyeColor: null,
+  displayName: "",
+  region: "",
+  preferredStyle: "",
 };
 
 // Default user preferences
