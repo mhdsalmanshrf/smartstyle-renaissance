@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { OccasionType } from "@/utils/colorHarmony";
 import { calculateOutfitScore } from "@/utils/outfitIntelligence";
@@ -10,6 +9,8 @@ type UserProfile = {
   eyeColor: string | null;
 };
 
+export type ClothingStatus = "available" | "in-laundry" | "dirty" | "fresh";
+
 export type ClothingItem = {
   id: string;
   imageUrl: string;
@@ -19,6 +20,8 @@ export type ClothingItem = {
   dateAdded: string;
   wearCount?: number; // Track how often an item is worn
   lastWornDate?: string | null; // Last time this item was worn
+  status?: ClothingStatus; // Track status of clothing item
+  lastStatusChange?: string | null; // When the status was last changed
 };
 
 type Outfit = {
@@ -78,6 +81,11 @@ type WardrobeContextType = {
   updateItemWearCount: (itemId: string) => void;
   provideFeedback: (outfitId: string, rating: number, mood: string) => void;
   getOutfitRecommendations: (count?: number) => Outfit[];
+  // Laundry tracker functionality
+  updateItemStatus: (itemId: string, status: ClothingStatus) => void;
+  getLaundryItems: () => ClothingItem[];
+  restoreItemFromLaundry: (itemId: string) => void;
+  restoreAllLaundry: () => void;
 };
 
 const defaultUserProfile: UserProfile = {
@@ -219,7 +227,9 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       id: Date.now().toString(),
       dateAdded: new Date().toISOString(),
       wearCount: 0,
-      lastWornDate: null
+      lastWornDate: null,
+      status: "available", // Default status
+      lastStatusChange: new Date().toISOString(),
     };
     setWardrobe((prev) => [...prev, newItem]);
   };
@@ -243,6 +253,41 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setWearHistory(prev => ({
       ...prev,
       [itemId]: (prev[itemId] || 0) + 1
+    }));
+  };
+  
+  // Add new functions for laundry tracking
+  const updateItemStatus = (itemId: string, status: ClothingStatus) => {
+    setWardrobe(prev => prev.map(item => {
+      if (item.id === itemId) {
+        return {
+          ...item,
+          status,
+          lastStatusChange: new Date().toISOString()
+        };
+      }
+      return item;
+    }));
+  };
+  
+  const getLaundryItems = () => {
+    return wardrobe.filter(item => item.status === "in-laundry" || item.status === "dirty");
+  };
+  
+  const restoreItemFromLaundry = (itemId: string) => {
+    updateItemStatus(itemId, "available");
+  };
+  
+  const restoreAllLaundry = () => {
+    setWardrobe(prev => prev.map(item => {
+      if (item.status === "in-laundry" || item.status === "dirty") {
+        return {
+          ...item,
+          status: "available",
+          lastStatusChange: new Date().toISOString()
+        };
+      }
+      return item;
     }));
   };
   
@@ -484,6 +529,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Update wear counts for all items in the outfit
     currentOutfit.items.forEach(item => {
       updateItemWearCount(item.id);
+      // Mark item as dirty after wearing
+      updateItemStatus(item.id, "dirty");
     });
     
     setCurrentOutfit(null);
@@ -510,7 +557,12 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         userPreferences,
         updateItemWearCount,
         provideFeedback,
-        getOutfitRecommendations
+        getOutfitRecommendations,
+        // Laundry tracking functionality
+        updateItemStatus,
+        getLaundryItems,
+        restoreItemFromLaundry,
+        restoreAllLaundry
       }}
     >
       {children}

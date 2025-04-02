@@ -12,6 +12,7 @@ import WardrobeAdd from "./pages/WardrobeAdd";
 import OutfitSuggestion from "./pages/OutfitSuggestion";
 import SmartShopping from "./pages/SmartShopping";
 import WardrobeManager from "./pages/WardrobeManager";
+import LaundryTracker from "./pages/LaundryTracker";
 import { WardrobeProvider } from "./contexts/WardrobeContext";
 import ThemeToggle from "./components/ThemeToggle";
 
@@ -35,6 +36,7 @@ const App = () => (
                 <Route path="/outfit" element={<OutfitSuggestion />} />
                 <Route path="/shop" element={<SmartShopping />} />
                 <Route path="/wardrobe" element={<WardrobeManager />} />
+                <Route path="/laundry" element={<LaundryTracker />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

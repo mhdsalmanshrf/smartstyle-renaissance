@@ -1,5 +1,5 @@
 
-import { Shirt, ShoppingBag, User, ImagePlus, Layers } from "lucide-react";
+import { Shirt, ShoppingBag, Layers, ImagePlus, RefreshCw } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useWardrobe } from "@/contexts/WardrobeContext";
 
@@ -32,6 +32,12 @@ const BottomNavbar = () => {
           icon={<Layers size={24} />} 
           label="Wardrobe" 
           isActive={location.pathname === "/wardrobe"} 
+        />
+        <NavItem 
+          to="/laundry" 
+          icon={<RefreshCw size={24} />} 
+          label="Laundry" 
+          isActive={location.pathname === "/laundry"} 
         />
         <NavItem 
           to="/shop" 
