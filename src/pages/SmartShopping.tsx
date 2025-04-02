@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useWardrobe } from "@/contexts/WardrobeContext";
-import { Search, Heart, ShoppingBag, ExternalLink, Sparkles, Zap, Link2 } from "lucide-react";
+import { Search, Heart, ShoppingBag, ExternalLink, Sparkles, Zap, Link2, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Toggle } from "@/components/ui/toggle";
@@ -9,15 +9,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import WardrobeGapAnalysis from "@/components/WardrobeGapAnalysis";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const categories = ["All", "Tops", "Bottoms", "Shoes", "Accessories"];
 const smartFilters = ["Smart Matches", "Closet Complete", "Upgrade Suggestions", "Gap Fillers"];
+const colorOptions = [
+  "All", "Black", "White", "Red", "Blue", "Green", "Yellow", 
+  "Purple", "Pink", "Orange", "Brown", "Gray", "Navy", "Beige"
+];
 
 const SmartShopping = () => {
   const { shoppingItems, wardrobe } = useWardrobe();
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeSmartFilter, setActiveSmartFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedColor, setSelectedColor] = useState("All");
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("discover");
 
@@ -37,6 +43,14 @@ const SmartShopping = () => {
       );
       
       if (!matchesCategory) return false;
+    }
+    
+    // Apply color filter
+    if (selectedColor !== "All") {
+      const itemColor = item.color.toLowerCase();
+      if (!itemColor.includes(selectedColor.toLowerCase())) {
+        return false;
+      }
     }
     
     // Apply smart filter
@@ -131,6 +145,37 @@ const SmartShopping = () => {
                 </Toggle>
               ))}
             </div>
+            
+            {/* Add Color Filter Dropdown */}
+            <div className="mt-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Palette size={16} className="text-gray-500" />
+                <span className="text-sm font-medium">Color Filter</span>
+              </div>
+              <Select
+                value={selectedColor}
+                onValueChange={setSelectedColor}
+              >
+                <SelectTrigger className="w-full fashion-input h-9">
+                  <SelectValue placeholder="Select color" />
+                </SelectTrigger>
+                <SelectContent>
+                  {colorOptions.map(color => (
+                    <SelectItem key={color} value={color}>
+                      <div className="flex items-center gap-2">
+                        {color !== "All" && (
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: color.toLowerCase() }}
+                          />
+                        )}
+                        {color}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </TabsContent>
         
@@ -153,6 +198,37 @@ const SmartShopping = () => {
                   {filter}
                 </Toggle>
               ))}
+            </div>
+            
+            {/* Add Color Filter for Smart Tab too */}
+            <div className="mt-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Palette size={16} className="text-gray-500" />
+                <span className="text-sm font-medium">Color Filter</span>
+              </div>
+              <Select
+                value={selectedColor}
+                onValueChange={setSelectedColor}
+              >
+                <SelectTrigger className="w-full fashion-input h-9">
+                  <SelectValue placeholder="Select color" />
+                </SelectTrigger>
+                <SelectContent>
+                  {colorOptions.map(color => (
+                    <SelectItem key={color} value={color}>
+                      <div className="flex items-center gap-2">
+                        {color !== "All" && (
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: color.toLowerCase() }}
+                          />
+                        )}
+                        {color}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </TabsContent>
@@ -185,6 +261,13 @@ const SmartShopping = () => {
                   </Badge>
                 </div>
               )}
+              
+              {/* Add color badge */}
+              <div className="absolute bottom-2 left-2">
+                <Badge variant="outline" className="bg-white/90 text-xs">
+                  {item.color}
+                </Badge>
+              </div>
             </div>
             
             <h3 className="font-medium mb-1 leading-tight">{item.name}</h3>
