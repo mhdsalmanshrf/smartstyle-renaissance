@@ -1,7 +1,6 @@
-
 import React, { useState } from "react";
 import { useWardrobe } from "@/contexts/WardrobeContext";
-import { Tshirt, RefreshCw, Check, Trash2 } from "lucide-react";
+import { Shirt, RefreshCw, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +20,6 @@ const LaundryTracker = () => {
   const [filter, setFilter] = useState<ClothingStatus | "all">("all");
   const { toast } = useToast();
 
-  // Filter items based on laundry status
   const laundryItems = wardrobe.filter(
     item => filter === "all" ? 
       (item.status === "in-laundry" || item.status === "dirty") : 
@@ -95,7 +93,7 @@ const LaundryTracker = () => {
 
       {laundryItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 text-center">
-          <Tshirt className="h-12 w-12 text-muted-foreground mb-4" />
+          <Shirt className="h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium">No items in laundry</h3>
           <p className="text-muted-foreground mt-2">
             Items will appear here when they are marked as dirty or in laundry.
