@@ -85,7 +85,7 @@ const OutfitSuggestion = () => {
     return <EmptyWardrobeMessage />;
   }
   return <div className="pb-20 animate-fade-in">
-      <h1 className="text-3xl mb-2 font-bold text-zinc-100">Today's Outfit</h1>
+      <h1 className="text-3xl mb-2 font-bold text-neutral-500">Today's Outfit</h1>
       
       <WeatherBadge />
       
