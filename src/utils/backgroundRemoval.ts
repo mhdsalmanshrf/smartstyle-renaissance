@@ -32,7 +32,7 @@ function resizeImageIfNeeded(canvas: HTMLCanvasElement, ctx: CanvasRenderingCont
   return false;
 }
 
-// Improved color detection algorithm
+// Enhanced color detection algorithm with better handling of whites and grays
 export const detectOutfitColor = async (imageElement: HTMLImageElement): Promise<string> => {
   try {
     console.log('Starting outfit color detection...');
@@ -71,118 +71,228 @@ export const detectOutfitColor = async (imageElement: HTMLImageElement): Promise
     };
     
     let totalPixels = 0;
+    let backgroundPixels = 0;
     
-    // Sample every 4th pixel to improve performance while maintaining accuracy
-    for (let i = 0; i < data.length; i += 16) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const a = data[i + 3];
+    // First pass: Count potential background pixels (edges of the image) 
+    // to better identify what to exclude
+    const edgePixels: Array<{r: number, g: number, b: number}> = [];
+    const sampleSize = 100; // Number of edge pixels to sample
+    
+    // Sample top edge
+    for (let x = 0; x < canvas.width; x += Math.max(1, Math.floor(canvas.width / sampleSize))) {
+      const i = (x * 4);
+      if (i < data.length) {
+        edgePixels.push({r: data[i], g: data[i+1], b: data[i+2]});
+      }
+    }
+    
+    // Sample bottom edge
+    const bottomRow = (canvas.height - 1) * canvas.width * 4;
+    for (let x = 0; x < canvas.width; x += Math.max(1, Math.floor(canvas.width / sampleSize))) {
+      const i = bottomRow + (x * 4);
+      if (i < data.length) {
+        edgePixels.push({r: data[i], g: data[i+1], b: data[i+2]});
+      }
+    }
+    
+    // Sample left and right edges
+    for (let y = 0; y < canvas.height; y += Math.max(1, Math.floor(canvas.height / sampleSize))) {
+      // Left edge
+      const leftI = (y * canvas.width * 4);
+      if (leftI < data.length) {
+        edgePixels.push({r: data[leftI], g: data[leftI+1], b: data[leftI+2]});
+      }
       
-      // Skip fully transparent or nearly transparent pixels
-      if (a < 128) continue;
-      
-      // Skip pixels that are likely background (very light or very dark)
-      if ((r > 240 && g > 240 && b > 240) || (r < 15 && g < 15 && b < 15)) continue;
-      
-      totalPixels++;
-      
-      // Improved color classification with more precise thresholds
-      // Red detection
-      if (r > 180 && g < 100 && b < 100) {
-        colorCounts.red += 2; // Give more weight to vivid colors
+      // Right edge
+      const rightI = (y * canvas.width + canvas.width - 1) * 4;
+      if (rightI < data.length) {
+        edgePixels.push({r: data[rightI], g: data[rightI+1], b: data[rightI+2]});
       }
-      // Green detection
-      else if (r < 100 && g > 150 && b < 100) {
-        colorCounts.green += 2;
+    }
+    
+    // Identify likely background color
+    const isBackgroundPixel = (r: number, g: number, b: number): boolean => {
+      // Check if this pixel is similar to edge pixels (likely background)
+      for (const edgePixel of edgePixels) {
+        const colorDistance = Math.sqrt(
+          (r - edgePixel.r) ** 2 + 
+          (g - edgePixel.g) ** 2 + 
+          (b - edgePixel.b) ** 2
+        );
+        if (colorDistance < 30) return true; // Threshold for similarity
       }
-      // Blue detection
-      else if (r < 100 && g < 120 && b > 150) {
-        colorCounts.blue += 2;
-      }
-      // Yellow detection
-      else if (r > 180 && g > 180 && b < 100) {
-        colorCounts.yellow += 2;
-      }
-      // Purple detection
-      else if (r > 100 && r < 180 && g < 100 && b > 150) {
-        colorCounts.purple += 2;
-      }
-      // Pink detection
-      else if (r > 180 && g < 150 && b > 150) {
-        colorCounts.pink += 2;
-      }
-      // Orange detection
-      else if (r > 180 && g > 100 && g < 180 && b < 100) {
-        colorCounts.orange += 2;
-      }
-      // Brown detection
-      else if (r > 100 && r < 180 && g > 50 && g < 140 && b < 100) {
-        colorCounts.brown += 1.5;
-      }
-      // Black detection (very dark colors)
-      else if (r < 50 && g < 50 && b < 50) {
-        colorCounts.black += 1;
-      }
-      // White detection (very light colors, but not pure white)
-      else if (r > 200 && g > 200 && b > 200) {
-        colorCounts.white += 1;
-      }
-      // Gray detection
-      else if (r > 80 && r < 200 && g > 80 && g < 200 && b > 80 && b < 200 && 
-              Math.abs(r - g) < 30 && Math.abs(r - b) < 30 && Math.abs(g - b) < 30) {
-        colorCounts.gray += 1;
-      }
-      // Navy detection
-      else if (r < 80 && g < 100 && b > 100 && b < 180) {
-        colorCounts.navy += 1.5;
-      }
-      // Teal detection
-      else if (r < 80 && g > 100 && g < 180 && b > 100 && b < 180) {
-        colorCounts.teal += 1.5;
-      }
-      // Maroon detection
-      else if (r > 120 && r < 180 && g < 80 && b < 80) {
-        colorCounts.maroon += 1.5;
-      }
-      // Beige detection
-      else if (r > 180 && g > 160 && b > 120 && b < 180) {
-        colorCounts.beige += 1.5;
-      }
-      else {
-        // For non-matched colors, find the closest match
-        const distances = {
-          red: Math.sqrt((r - 255) ** 2 + g ** 2 + b ** 2),
-          green: Math.sqrt(r ** 2 + (g - 255) ** 2 + b ** 2),
-          blue: Math.sqrt(r ** 2 + g ** 2 + (b - 255) ** 2),
-          yellow: Math.sqrt((r - 255) ** 2 + (g - 255) ** 2 + b ** 2),
-          purple: Math.sqrt((r - 128) ** 2 + g ** 2 + (b - 255) ** 2),
-          pink: Math.sqrt((r - 255) ** 2 + (g - 192) ** 2 + (b - 203) ** 2),
-          orange: Math.sqrt((r - 255) ** 2 + (g - 165) ** 2 + b ** 2),
-          brown: Math.sqrt((r - 165) ** 2 + (g - 42) ** 2 + (b - 42) ** 2),
-          black: Math.sqrt(r ** 2 + g ** 2 + b ** 2),
-          white: Math.sqrt((r - 255) ** 2 + (g - 255) ** 2 + (b - 255) ** 2),
-          gray: Math.sqrt((r - 128) ** 2 + (g - 128) ** 2 + (b - 128) ** 2),
-          navy: Math.sqrt((r - 0) ** 2 + (g - 0) ** 2 + (b - 128) ** 2),
-          teal: Math.sqrt((r - 0) ** 2 + (g - 128) ** 2 + (b - 128) ** 2),
-          maroon: Math.sqrt((r - 128) ** 2 + (g - 0) ** 2 + (b - 0) ** 2),
-          beige: Math.sqrt((r - 245) ** 2 + (g - 245) ** 2 + (b - 220) ** 2)
-        };
+      return false;
+    };
+    
+    // Main color detection - sample pixels with improved strategy
+    // Analyze more pixels in the central area of the image (where the outfit is likely to be)
+    const centerXStart = Math.floor(canvas.width * 0.2);
+    const centerXEnd = Math.floor(canvas.width * 0.8);
+    const centerYStart = Math.floor(canvas.height * 0.2);
+    const centerYEnd = Math.floor(canvas.height * 0.8);
+    
+    // Sample more densely in center, less on edges
+    const stride = 8; // Sample every 8th pixel
+    const centerStride = 4; // Sample more densely in the center
+    
+    for (let y = 0; y < canvas.height; y += (y >= centerYStart && y <= centerYEnd ? centerStride : stride)) {
+      for (let x = 0; x < canvas.width; x += (x >= centerXStart && x <= centerXEnd ? centerStride : stride)) {
+        const i = (y * canvas.width + x) * 4;
         
-        // Find the color with minimum distance
-        let minDistance = Infinity;
-        let closestColor = "unknown";
+        if (i >= data.length) continue;
         
-        for (const [color, distance] of Object.entries(distances)) {
-          if (distance < minDistance) {
-            minDistance = distance;
-            closestColor = color;
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3];
+        
+        // Skip fully transparent or nearly transparent pixels
+        if (a < 128) continue;
+        
+        // Skip pixels that match the background pattern
+        if (isBackgroundPixel(r, g, b)) {
+          backgroundPixels++;
+          continue;
+        }
+        
+        totalPixels++;
+        
+        // Improved white and gray detection - more precise
+        // For very light colors (potential whites)
+        if (r > 220 && g > 220 && b > 220) {
+          // Pure white has r,g,b all very close to 255
+          const maxColorDiff = Math.max(
+            Math.abs(r - g),
+            Math.abs(r - b),
+            Math.abs(g - b)
+          );
+          
+          // If all channels are very close, it's white
+          if (maxColorDiff < 10) {
+            colorCounts.white += 1;
+            continue;
+          }
+          
+          // If there's a slight color tint, categorize accordingly
+          if (r > g + 10 && r > b + 10) {
+            colorCounts.pink += 0.5;
+          } else if (g > r + 10 && g > b + 10) {
+            colorCounts.green += 0.5;
+          } else if (b > r + 10 && b > g + 10) {
+            colorCounts.blue += 0.5;
+          } else {
+            // Still mostly white but with a very slight tint
+            colorCounts.white += 0.75;
+          }
+          continue;
+        }
+        
+        // Improved gray detection
+        if (r > 60 && r < 220 && g > 60 && g < 220 && b > 60 && b < 220) {
+          const maxDiff = Math.max(
+            Math.abs(r - g),
+            Math.abs(r - b),
+            Math.abs(g - b)
+          );
+          
+          if (maxDiff < 20) {
+            // True gray
+            colorCounts.gray += 1;
+            continue;
           }
         }
         
-        colorCounts[closestColor] += 0.5; // Add with lower weight
+        // Enhanced color classification for more accurate detection
+        
+        // Red detection - improved
+        if (r > 180 && r > g * 1.5 && r > b * 1.5) {
+          colorCounts.red += 2;
+        }
+        // Green detection - improved
+        else if (g > 120 && g > r * 1.2 && g > b * 1.2) {
+          colorCounts.green += 2;
+        }
+        // Blue detection - improved
+        else if (b > 150 && b > r * 1.2 && b > g * 1.2) {
+          colorCounts.blue += 2;
+        }
+        // Yellow detection - improved
+        else if (r > 180 && g > 180 && r + g > b * 3) {
+          colorCounts.yellow += 2;
+        }
+        // Purple detection - improved
+        else if (r > 100 && b > 150 && r + b > g * 2.5) {
+          colorCounts.purple += 2;
+        }
+        // Pink detection - improved
+        else if (r > 180 && b > 140 && r + b > g * 2) {
+          colorCounts.pink += 2;
+        }
+        // Orange detection - improved
+        else if (r > 180 && g > 100 && g < 180 && r > b * 2) {
+          colorCounts.orange += 2;
+        }
+        // Brown detection - improved
+        else if (r > 100 && r < 200 && g > 50 && g < 150 && b < 100) {
+          colorCounts.brown += 1.5;
+        }
+        // Black detection (very dark colors)
+        else if (r < 60 && g < 60 && b < 60) {
+          colorCounts.black += 1.5;
+        }
+        // Navy detection - improved
+        else if (r < 80 && g < 100 && b > 80 && b < 200) {
+          colorCounts.navy += 1.5;
+        }
+        // Teal detection
+        else if (r < 100 && g > 100 && g < 200 && b > 100 && b < 200) {
+          colorCounts.teal += 1.5;
+        }
+        // Maroon detection
+        else if (r > 120 && r < 180 && g < 80 && b < 80) {
+          colorCounts.maroon += 1.5;
+        }
+        // Beige detection - improved
+        else if (r > 180 && g > 160 && b > 120 && b < r && b < g) {
+          colorCounts.beige += 1.5;
+        }
+        else {
+          // For non-matched colors, find the closest match
+          const distances = {
+            red: Math.sqrt((r - 255) ** 2 + g ** 2 + b ** 2),
+            green: Math.sqrt(r ** 2 + (g - 255) ** 2 + b ** 2),
+            blue: Math.sqrt(r ** 2 + g ** 2 + (b - 255) ** 2),
+            yellow: Math.sqrt((r - 255) ** 2 + (g - 255) ** 2 + b ** 2),
+            purple: Math.sqrt((r - 128) ** 2 + g ** 2 + (b - 255) ** 2),
+            pink: Math.sqrt((r - 255) ** 2 + (g - 192) ** 2 + (b - 203) ** 2),
+            orange: Math.sqrt((r - 255) ** 2 + (g - 165) ** 2 + b ** 2),
+            brown: Math.sqrt((r - 165) ** 2 + (g - 42) ** 2 + (b - 42) ** 2),
+            black: Math.sqrt(r ** 2 + g ** 2 + b ** 2),
+            white: Math.sqrt((r - 255) ** 2 + (g - 255) ** 2 + (b - 255) ** 2),
+            gray: Math.sqrt((r - 128) ** 2 + (g - 128) ** 2 + (b - 128) ** 2),
+            navy: Math.sqrt((r - 0) ** 2 + (g - 0) ** 2 + (b - 128) ** 2),
+            teal: Math.sqrt((r - 0) ** 2 + (g - 128) ** 2 + (b - 128) ** 2),
+            maroon: Math.sqrt((r - 128) ** 2 + (g - 0) ** 2 + (b - 0) ** 2),
+            beige: Math.sqrt((r - 245) ** 2 + (g - 245) ** 2 + (b - 220) ** 2)
+          };
+          
+          // Find the color with minimum distance
+          let minDistance = Infinity;
+          let closestColor = "unknown";
+          
+          for (const [color, distance] of Object.entries(distances)) {
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestColor = color;
+            }
+          }
+          
+          colorCounts[closestColor] += 0.5; // Add with lower weight
+        }
       }
     }
+    
+    console.log(`Background pixels identified: ${backgroundPixels}`);
     
     // Don't return a result if we didn't analyze enough pixels
     if (totalPixels < 50) {
@@ -190,15 +300,40 @@ export const detectOutfitColor = async (imageElement: HTMLImageElement): Promise
       return "unknown";
     }
     
+    // Log color percentages for debugging
+    for (const [color, count] of Object.entries(colorCounts)) {
+      console.log(`Color ${color}: ${count} (${Math.round(count / totalPixels * 100)}%)`);
+    }
+    
+    // Apply a correction factor to reduce false white/gray detections
+    // If the image has a lot of white pixels, adjust the threshold to require more white pixels to be classified as white
+    const whiteCorrectionFactor = colorCounts.white > totalPixels * 0.3 ? 1.5 : 1;
+    const grayCorrectionFactor = colorCounts.gray > totalPixels * 0.3 ? 1.5 : 1;
+    
+    colorCounts.white = colorCounts.white / whiteCorrectionFactor;
+    colorCounts.gray = colorCounts.gray / grayCorrectionFactor;
+    
     // Find the dominant color with higher confidence
     let dominantColor = "unknown";
     let maxCount = 0;
     
     for (const [color, count] of Object.entries(colorCounts)) {
-      console.log(`Color ${color}: ${count} (${Math.round(count / totalPixels * 100)}%)`);
       if (count > maxCount) {
         maxCount = count;
         dominantColor = color;
+      }
+    }
+    
+    // Special handling for white vs other colors
+    // White needs higher threshold to be considered dominant
+    if (dominantColor === "white") {
+      // Check if there's another color that's close in count
+      for (const [color, count] of Object.entries(colorCounts)) {
+        if (color !== "white" && color !== "gray" && count > maxCount * 0.7) {
+          // If another color is at least 70% as common as white, prefer the other color
+          dominantColor = color;
+          break;
+        }
       }
     }
     
@@ -206,9 +341,17 @@ export const detectOutfitColor = async (imageElement: HTMLImageElement): Promise
     // At least 10% of pixels should match the color
     if (maxCount / totalPixels < 0.1) {
       console.log('No dominant color found above threshold');
-      // Try to find white/black/gray as fallback
-      if (colorCounts.white > totalPixels * 0.05) return "white";
+      // Try to find a color with at least 5% presence
+      for (const [color, count] of Object.entries(colorCounts)) {
+        if (count / totalPixels > 0.05 && color !== "white" && color !== "gray") {
+          console.log(`Using secondary color: ${color}`);
+          return color;
+        }
+      }
+      
+      // Fallback to black/white/gray if no other color is dominant
       if (colorCounts.black > totalPixels * 0.05) return "black";
+      if (colorCounts.white > totalPixels * 0.05) return "white";
       if (colorCounts.gray > totalPixels * 0.05) return "gray";
       return "unknown";
     }
