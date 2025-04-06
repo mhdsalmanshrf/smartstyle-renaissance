@@ -54,6 +54,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (user && rememberDevice) {
       localStorage.setItem("user", JSON.stringify(user));
+    } else if (!user && localStorage.getItem("user")) {
+      // Clear stored user on logout if not remembering
+      localStorage.removeItem("user");
     }
   }, [user, rememberDevice]);
 
@@ -71,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(mockUser);
       if (remember) {
         setRememberDevice(true);
+        localStorage.setItem("user", JSON.stringify(mockUser));
       }
       toast.success("Successfully logged in!");
     } catch (error) {
@@ -94,6 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       
       setUser(mockUser);
+      setRememberDevice(true);
+      localStorage.setItem("user", JSON.stringify(mockUser));
       toast.success("Account created successfully!");
     } catch (error) {
       console.error("Signup failed", error);
@@ -116,6 +122,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       
       setUser(mockUser);
+      setRememberDevice(true);
+      localStorage.setItem("user", JSON.stringify(mockUser));
       toast.success("Successfully signed in with Google!");
     } catch (error) {
       console.error("Google login failed", error);
@@ -127,10 +135,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    setUser(null);
-    if (rememberDevice) {
+    if (!rememberDevice) {
       localStorage.removeItem("user");
     }
+    setUser(null);
     toast.success("Successfully logged out");
   };
 

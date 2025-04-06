@@ -8,15 +8,19 @@ import { toast } from "sonner";
 import { extractDominantColors } from "@/utils/backgroundRemoval";
 import { Camera, Upload } from "lucide-react";
 import WelcomeAuth from "@/components/auth/WelcomeAuth";
+import AuthModal from "@/components/auth/AuthModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 const OnboardingSelfie = () => {
   const { userProfile, setUserProfile } = useWardrobe();
+  const { isAuthenticated } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(
     userProfile?.selfieUrl || null
   );
   const [isUploading, setIsUploading] = useState(false);
   const [showButtons, setShowButtons] = useState(true);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -37,7 +41,20 @@ const OnboardingSelfie = () => {
     };
   }, []);
 
+  useEffect(() => {
+    // If user has a selfie already and they're authenticated, go straight to outfits
+    if (isAuthenticated && userProfile.selfieUrl) {
+      navigate("/outfit");
+    }
+  }, [isAuthenticated, userProfile.selfieUrl, navigate]);
+
   const handleCapture = async () => {
+    // If not authenticated, show auth modal
+    if (!isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
@@ -77,6 +94,17 @@ const OnboardingSelfie = () => {
     }
   };
 
+  const handleFileSelect = () => {
+    // If not authenticated, show auth modal
+    if (!isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+    
+    // If authenticated, open file input
+    fileInputRef.current?.click();
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files[0]) {
@@ -96,6 +124,12 @@ const OnboardingSelfie = () => {
   };
 
   const startCamera = async () => {
+    // If not authenticated, show auth modal
+    if (!isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user" },
@@ -163,6 +197,14 @@ const OnboardingSelfie = () => {
           <p className="text-gray-500 text-sm">
             Your selfie is only used for color analysis and is never shared.
           </p>
+          
+          {!isAuthenticated && (
+            <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 rounded-md border border-amber-200 dark:border-amber-800">
+              <p className="text-amber-800 dark:text-amber-200 text-sm">
+                Please sign in to save your features and outfit preferences.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="mb-6">
@@ -214,7 +256,7 @@ const OnboardingSelfie = () => {
         {showButtons && !isCameraActive && (
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleFileSelect}
               variant="outline"
               className="flex-1 flex items-center"
             >
@@ -273,6 +315,8 @@ const OnboardingSelfie = () => {
           .
         </p>
       </div>
+      
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClothingItem } from "@/contexts/WardrobeContext";
 import { Outfit } from "@/contexts/WardrobeContext";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Save } from "lucide-react";
 import AuthModal from "@/components/auth/AuthModal";
 
 interface OutfitDisplayProps {
@@ -131,9 +131,10 @@ const OutfitDisplay = ({ outfit, outfitReason, onRefresh, onWear, isAuthenticate
                 <div className="mt-4 flex flex-col gap-3">
                   <Button
                     onClick={handleWear}
-                    className="w-full fashion-btn-primary"
+                    className="w-full fashion-btn-primary flex items-center justify-center gap-2"
                   >
-                    {isAuthenticated ? "Wear Today" : "Login to Save Outfit"}
+                    <Save className="h-4 w-4" />
+                    {isAuthenticated ? "Save & Wear Today" : "Login to Save Outfit"}
                   </Button>
                   {!isAuthenticated && (
                     <p className="text-xs text-center text-gray-500">
