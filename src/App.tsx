@@ -13,6 +13,7 @@ import { WardrobeProvider } from "./contexts/WardrobeContext";
 import Settings from "./pages/Settings";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AppLayout from "./components/AppLayout";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
@@ -20,67 +21,69 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <ThemeProvider defaultTheme="dark" storageKey="smartstyle-theme">
-        <WardrobeProvider>
-          <Routes>
-            <Route path="/" element={<OnboardingSelfie />} />
-            <Route 
-              path="/wardrobe/add" 
-              element={
-                <AppLayout showBackButton>
-                  <WardrobeAdd />
-                </AppLayout>
-              } 
-            />
-            <Route 
-              path="/outfit" 
-              element={
-                <AppLayout>
-                  <OutfitSuggestion />
-                </AppLayout>
-              } 
-            />
-            <Route 
-              path="/shop" 
-              element={
-                <AppLayout>
-                  <SmartShopping />
-                </AppLayout>
-              } 
-            />
-            <Route 
-              path="/wardrobe" 
-              element={
-                <AppLayout>
-                  <WardrobeManager />
-                </AppLayout>
-              } 
-            />
-            <Route 
-              path="/laundry" 
-              element={
-                <AppLayout>
-                  <LaundryTracker />
-                </AppLayout>
-              } 
-            />
-            <Route 
-              path="/settings" 
-              element={
-                <AppLayout>
-                  <Settings />
-                </AppLayout>
-              } 
-            />
-            <Route 
-              path="*" 
-              element={
-                <AppLayout>
-                  <NotFound />
-                </AppLayout>
-              } 
-            />
-          </Routes>
-        </WardrobeProvider>
+        <AuthProvider>
+          <WardrobeProvider>
+            <Routes>
+              <Route path="/" element={<OnboardingSelfie />} />
+              <Route 
+                path="/wardrobe/add" 
+                element={
+                  <AppLayout showBackButton>
+                    <WardrobeAdd />
+                  </AppLayout>
+                } 
+              />
+              <Route 
+                path="/outfit" 
+                element={
+                  <AppLayout>
+                    <OutfitSuggestion />
+                  </AppLayout>
+                } 
+              />
+              <Route 
+                path="/shop" 
+                element={
+                  <AppLayout>
+                    <SmartShopping />
+                  </AppLayout>
+                } 
+              />
+              <Route 
+                path="/wardrobe" 
+                element={
+                  <AppLayout>
+                    <WardrobeManager />
+                  </AppLayout>
+                } 
+              />
+              <Route 
+                path="/laundry" 
+                element={
+                  <AppLayout>
+                    <LaundryTracker />
+                  </AppLayout>
+                } 
+              />
+              <Route 
+                path="/settings" 
+                element={
+                  <AppLayout>
+                    <Settings />
+                  </AppLayout>
+                } 
+              />
+              <Route 
+                path="*" 
+                element={
+                  <AppLayout>
+                    <NotFound />
+                  </AppLayout>
+                } 
+              />
+            </Routes>
+          </WardrobeProvider>
+        </AuthProvider>
       </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>

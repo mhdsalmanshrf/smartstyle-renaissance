@@ -1,98 +1,154 @@
 
-import { RefreshCw, Check, Info } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClothingItem } from "@/contexts/WardrobeContext";
+import { Outfit } from "@/contexts/WardrobeContext";
+import { RefreshCw } from "lucide-react";
+import AuthModal from "@/components/auth/AuthModal";
 
 interface OutfitDisplayProps {
-  outfit: {
-    id: string;
-    items: ClothingItem[];
-    date: string;
-    worn: boolean;
-    occasion?: string;
-    score?: number;
-  } | null;
+  outfit: Outfit | null;
   outfitReason: string;
   onRefresh: () => void;
   onWear: () => void;
+  isAuthenticated?: boolean;
 }
 
-const OutfitDisplay = ({ outfit, outfitReason, onRefresh, onWear }: OutfitDisplayProps) => {
-  if (!outfit) return null;
+const OutfitDisplay = ({ outfit, outfitReason, onRefresh, onWear, isAuthenticated = false }: OutfitDisplayProps) => {
+  const [loading, setLoading] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (outfit && outfit.items.length > 0) {
+      setSelectedItem(outfit.items[0]);
+    }
+  }, [outfit]);
+
+  if (!outfit) {
+    return (
+      <div className="p-8 text-center">
+        <p>Generating your outfit...</p>
+      </div>
+    );
+  }
+
+  const handleRefresh = () => {
+    setLoading(true);
+    setTimeout(() => {
+      onRefresh();
+      setLoading(false);
+    }, 600);
+  };
+
+  const handleWear = () => {
+    if (!isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+    onWear();
+  };
 
   return (
-    <div className="fashion-card mb-6 animate-slide-up">
-      <h2 className="text-xl font-semibold mb-1 text-center">
-        AI Recommended Outfit
-      </h2>
-      
-      {outfit.score && (
-        <div className="text-center mb-4">
-          <span className="inline-flex items-center gap-1 text-sm bg-fashion-secondary/30 px-2 py-0.5 rounded-full">
-            <span className="font-semibold">{Math.round(outfit.score)}/100</span> 
-            <span className="text-xs opacity-70">Match Score</span>
-          </span>
+    <>
+      <div className="mt-6">
+        <div className="mb-4 flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Your Outfit</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={loading}
+            className="flex gap-2 items-center"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
         </div>
-      )}
-      
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        {outfit.items.map((item) => (
-          <div key={item.id} className="border border-gray-100 rounded-lg overflow-hidden shadow-sm">
-            <div className="h-40 overflow-hidden">
-              <img 
-                src={item.imageUrl} 
-                alt={item.type} 
-                className="w-full h-full object-cover"
-              />
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+          <div className="md:col-span-2">
+            <div className="mb-4">
+              <Tabs defaultValue={outfit.items[0]?.id}>
+                <TabsList className="w-full">
+                  {outfit.items.map((item) => (
+                    <TabsTrigger
+                      key={item.id}
+                      value={item.id}
+                      onClick={() => setSelectedItem(item)}
+                      className="flex-1"
+                    >
+                      {item.type}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+
+                {outfit.items.map((item) => (
+                  <TabsContent key={item.id} value={item.id} className="mt-0">
+                    <Card className="overflow-hidden border-0 shadow-none">
+                      <CardContent className="p-0">
+                        <div className="aspect-square w-full overflow-hidden rounded-md">
+                          <img
+                            src={item.imageUrl}
+                            alt={item.type}
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                ))}
+              </Tabs>
             </div>
-            <div className="p-2 bg-gray-50">
-              <p className="font-medium capitalize">{item.type}</p>
-              {item.wearCount !== undefined && (
-                <p className="text-xs text-gray-500">
-                  Worn {item.wearCount} {item.wearCount === 1 ? 'time' : 'times'}
-                </p>
-              )}
-              {item.tags.length > 0 && (
-                <p className="text-xs text-gray-500 truncate">
-                  {item.tags.join(", ")}
-                </p>
-              )}
-            </div>
+
+            {selectedItem && (
+              <div className="mb-6">
+                <h3 className="font-medium">{selectedItem.type}</h3>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {selectedItem.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-block rounded-full bg-gray-100 px-2 py-1 text-xs"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        ))}
-      </div>
-      
-      <div className="bg-gray-50 p-4 rounded-lg mb-6">
-        <div className="flex items-start gap-2">
-          <Info size={20} className="text-fashion-primary flex-shrink-0 mt-1" />
-          <div>
-            <h3 className="font-medium mb-1">Why This Outfit</h3>
-            <p className="text-sm text-gray-600">
-              {outfitReason || `This outfit has been selected based on your personal style and today's weather.`}
-            </p>
+
+          <div className="md:col-span-3">
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-lg mb-2">Why this outfit?</h3>
+                <p className="text-gray-600 text-sm mb-6">{outfitReason}</p>
+
+                <div className="mt-4 flex flex-col gap-3">
+                  <Button
+                    onClick={handleWear}
+                    className="w-full fashion-btn-primary"
+                  >
+                    {isAuthenticated ? "Wear Today" : "Login to Save Outfit"}
+                  </Button>
+                  {!isAuthenticated && (
+                    <p className="text-xs text-center text-gray-500">
+                      Create an account to save your outfits and preferences
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
       
-      <div className="flex gap-4">
-        <Button 
-          variant="outline" 
-          className="flex-1 gap-2 border-gray-300"
-          onClick={onRefresh}
-        >
-          <RefreshCw size={18} />
-          Try Something Else
-        </Button>
-        
-        <Button 
-          className="flex-1 fashion-btn-primary gap-2"
-          onClick={onWear}
-        >
-          <Check size={18} />
-          Wear This Today
-        </Button>
-      </div>
-    </div>
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+    </>
   );
 };
 
