@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Camera, Upload, Plus, X, Sparkles, Image, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TagSuggestions from "@/components/TagSuggestions";
 import { detectOutfitColor, loadImage } from "@/utils/backgroundRemoval";
+import { pipeline } from "@huggingface/transformers";
 
 const clothingTypes = [
   "Shirt", "T-Shirt", "Blouse", "Sweater", 
@@ -31,6 +31,59 @@ const detectablePatterns = [
   "polka-dot", "plaid", "tie-dye", "graphic"
 ];
 
+// Mapping of image classification labels to our clothing types
+const labelToClothingType = {
+  // Upper body
+  "shirt": "Shirt",
+  "t-shirt": "T-Shirt",
+  "blouse": "Blouse",
+  "polo shirt": "Shirt",
+  "sweater": "Sweater",
+  "sweatshirt": "Sweater",
+  "hoodie": "Sweater",
+  "cardigan": "Sweater",
+  "tank top": "T-Shirt",
+  
+  // Lower body
+  "pants": "Pants",
+  "jeans": "Jeans",
+  "trousers": "Pants",
+  "shorts": "Shorts",
+  "skirt": "Skirt",
+  
+  // Full body
+  "dress": "Dress",
+  "jumpsuit": "Dress",
+  "romper": "Dress",
+  
+  // Outerwear
+  "jacket": "Jacket",
+  "coat": "Coat",
+  "blazer": "Jacket",
+  "vest": "Jacket",
+  
+  // Footwear
+  "shoes": "Shoes",
+  "sneakers": "Sneakers",
+  "boots": "Boots",
+  "sandals": "Shoes",
+  "heels": "Shoes",
+  
+  // Accessories
+  "hat": "Hat",
+  "cap": "Hat",
+  "beanie": "Hat",
+  "scarf": "Accessory",
+  "tie": "Accessory",
+  "belt": "Accessory",
+  "handbag": "Accessory",
+  "backpack": "Accessory",
+  "jewelry": "Accessory",
+  "watch": "Accessory",
+  "gloves": "Accessory",
+  "sunglasses": "Accessory"
+};
+
 const WardrobeAdd = () => {
   const { addClothingItem } = useWardrobe();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -43,6 +96,30 @@ const WardrobeAdd = () => {
   const [detectedColor, setDetectedColor] = useState<string | null>(null);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [detectingColor, setDetectingColor] = useState(false);
+  const [classifier, setClassifier] = useState<any>(null);
+  const [classifierLoading, setClassifierLoading] = useState(false);
+
+  // Load the classifier model on component mount
+  useEffect(() => {
+    const loadClassifier = async () => {
+      try {
+        setClassifierLoading(true);
+        const model = await pipeline(
+          "image-classification",
+          "Xenova/fashion-classifier-v1", 
+          { quantized: true }
+        );
+        setClassifier(model);
+        setClassifierLoading(false);
+        console.log("Clothing classifier model loaded successfully");
+      } catch (error) {
+        console.error("Error loading classifier model:", error);
+        setClassifierLoading(false);
+      }
+    };
+
+    loadClassifier();
+  }, []);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -84,34 +161,106 @@ const WardrobeAdd = () => {
         }
       }
       
-      // In a real app, this would call an AI API to analyze the clothing
-      // We're simulating AI analysis with a delayed response for demo purposes
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For this demo, we're generating random "AI" results
-      // In a real app, you would replace this with actual API calls to Vision models
-      
-      // 1. Detect the likely clothing type
-      const randomTypeIndex = Math.floor(Math.random() * clothingTypes.length);
-      const detectedType = clothingTypes[randomTypeIndex].toLowerCase();
-      
-      // 2. Detect patterns and other attributes
-      const randomPatternIndex = Math.floor(Math.random() * detectablePatterns.length);
-      const detectedPattern = detectablePatterns[randomPatternIndex];
-      
-      // 3. Set detected tags (include the pattern but not the color as it's already added)
-      setDetectedTags(prev => {
-        // Don't add duplicates
-        if (!prev.includes(detectedPattern)) {
-          return [...prev, detectedPattern];
+      // Use the loaded classifier to identify the clothing type if available
+      if (classifier && selectedFile) {
+        try {
+          toast.info("AI analyzing clothing type...");
+          
+          // Get result from the classifier
+          const result = await classifier(selectedFile);
+          console.log("Classifier result:", result);
+          
+          if (result && result.length > 0) {
+            // Find the best matching clothing type from our predefined types
+            const topPrediction = result[0].label.toLowerCase();
+            console.log("Top prediction:", topPrediction);
+            
+            // Try to map the prediction to our clothing types
+            let mappedType = null;
+            
+            // Check exact matches first
+            for (const [label, type] of Object.entries(labelToClothingType)) {
+              if (topPrediction.includes(label)) {
+                mappedType = type;
+                break;
+              }
+            }
+            
+            // If no exact match, check partial matches
+            if (!mappedType) {
+              for (const [label, type] of Object.entries(labelToClothingType)) {
+                for (const word of topPrediction.split(' ')) {
+                  if (label.includes(word) || word.includes(label)) {
+                    mappedType = type;
+                    break;
+                  }
+                }
+                if (mappedType) break;
+              }
+            }
+            
+            // If we found a mapped type, use it
+            if (mappedType) {
+              setClothingType(mappedType.toLowerCase());
+              toast.success(`AI detected: ${mappedType}`);
+            } else {
+              // Default to "Other" if no match found
+              setClothingType("other");
+              toast.info("Clothing type not clearly identified, defaulted to 'Other'");
+            }
+            
+            // Extract other info from predictions for tags
+            const tagWords = new Set<string>();
+            result.slice(0, 3).forEach(item => {
+              const label = item.label.toLowerCase();
+              // Extract potential descriptive words
+              label.split(/\s+/).forEach(word => {
+                if (
+                  word.length > 3 && 
+                  !['the', 'and', 'with', 'for'].includes(word) && 
+                  !detectedTags.includes(word)
+                ) {
+                  tagWords.add(word);
+                }
+              });
+            });
+            
+            // Add new tags from AI detection
+            setDetectedTags(prev => {
+              const newTags = [...prev, ...Array.from(tagWords)];
+              return [...new Set(newTags)]; // Deduplicate
+            });
+          }
+        } catch (error) {
+          console.error("Error during clothing classification:", error);
+          toast.error("Could not analyze clothing type");
         }
-        return prev;
-      });
-      
-      // 4. Auto-set the clothing type if not already set
-      if (!clothingType) {
-        setClothingType(detectedType);
-        toast.success(`AI detected this as: ${detectedType}`);
+      } else {
+        // Fallback to random selection for demo if classifier isn't loaded
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Random clothing type selection (fallback only)
+        const randomTypeIndex = Math.floor(Math.random() * clothingTypes.length);
+        const detectedType = clothingTypes[randomTypeIndex].toLowerCase();
+        
+        // 2. Detect patterns and other attributes
+        const randomPatternIndex = Math.floor(Math.random() * detectablePatterns.length);
+        const detectedPattern = detectablePatterns[randomPatternIndex];
+        
+        // 3. Set detected tags (include the pattern but not the color as it's already added)
+        setDetectedTags(prev => {
+          // Don't add duplicates
+          if (!prev.includes(detectedPattern)) {
+            return [...prev, detectedPattern];
+          }
+          return prev;
+        });
+        
+        // 4. Auto-set the clothing type if not already set
+        if (!clothingType) {
+          setClothingType(detectedType);
+          toast.success(`AI detected this as: ${detectedType}`);
+        }
       }
       
       setAnalysisComplete(true);
@@ -248,6 +397,11 @@ const WardrobeAdd = () => {
                   🤖 Detected color: {detectedColor}
                 </div>
               )}
+              {clothingType && (
+                <div className="absolute bottom-14 left-5 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                  👕 Detected type: {clothingType}
+                </div>
+              )}
             </div>
           ) : (
             <div className="w-full h-64 rounded-lg bg-gray-100 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 mb-4">
@@ -289,6 +443,25 @@ const WardrobeAdd = () => {
               <Sparkles size={16} className="mr-2" />
               Detect Outfit Color
             </Button>
+          )}
+          
+          {previewUrl && classifier && (
+            <Button 
+              onClick={analyzeClothing} 
+              variant="outline" 
+              className="w-full mt-2 border-dashed border-amber-500/50 text-amber-600"
+              disabled={analyzing}
+            >
+              <Sparkles size={16} className="mr-2" />
+              Re-analyze Clothing Type
+            </Button>
+          )}
+          
+          {classifierLoading && (
+            <div className="w-full flex justify-center items-center mt-2 py-1 text-sm text-muted-foreground">
+              <Loader2 size={14} className="mr-2 animate-spin" />
+              Loading AI model...
+            </div>
           )}
         </div>
         
