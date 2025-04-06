@@ -8,17 +8,22 @@ export interface DominantColors {
   eyeColor: string;
 }
 
-export const loadImage = async (src: string): Promise<HTMLImageElement> => {
+export const loadImage = async (src: string | File | Blob): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = (err) => reject(err);
-    img.src = src;
+    
+    if (typeof src === 'string') {
+      img.src = src;
+    } else {
+      img.src = URL.createObjectURL(src);
+    }
   });
 };
 
-export const detectOutfitColor = async (imageUrl: string): Promise<string> => {
+export const detectOutfitColor = async (imageUrl: string | HTMLImageElement): Promise<string> => {
   // Mock implementation - in a real app this would analyze the image
   // and return the actual dominant color
   const colors = ["blue", "green", "red", "black", "white", "purple", "yellow"];
@@ -26,12 +31,12 @@ export const detectOutfitColor = async (imageUrl: string): Promise<string> => {
 };
 
 export const extractDominantColors = async (
-  imageUrl: string
+  imageUrl: string | HTMLImageElement
 ): Promise<DominantColors> => {
   // In a real application, this would use computer vision to analyze the image
   // For this demo, we'll return mock values
   
-  console.log("Analyzing image for dominant colors:", imageUrl);
+  console.log("Analyzing image for dominant colors:", typeof imageUrl === 'string' ? imageUrl : 'HTMLImageElement');
   
   // Mock skin tones
   const skinTones = [
