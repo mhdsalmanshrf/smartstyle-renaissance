@@ -1,4 +1,3 @@
-
 import { pipeline, env } from '@huggingface/transformers';
 
 // Configure transformers.js to always download models
@@ -361,6 +360,82 @@ export const detectOutfitColor = async (imageElement: HTMLImageElement): Promise
   } catch (error) {
     console.error('Error detecting outfit color:', error);
     return "unknown";
+  }
+};
+
+// Extract dominant facial features colors from a selfie
+export const extractDominantColors = async (imageUrl: string): Promise<{ 
+  skinTone: string;
+  hairColor: string;
+  eyeColor: string;
+}> => {
+  try {
+    console.log('Analyzing selfie for dominant features...');
+    
+    // Create an image element to load the selfie
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = imageUrl;
+    });
+    
+    // For now, we'll use a simpler approach - detect the overall color
+    // and make some educated guesses about skin/hair/eye colors
+    const dominantColor = await detectOutfitColor(img);
+    console.log('Detected dominant color:', dominantColor);
+    
+    // Default values
+    let skinTone = "medium";
+    let hairColor = "brown";
+    let eyeColor = "brown";
+    
+    // Make educated guesses based on the dominant color
+    // This is a simplified approach - in a production app, we would use
+    // more sophisticated facial feature detection
+    switch (dominantColor) {
+      case "beige":
+      case "orange":
+        skinTone = "warm";
+        break;
+      case "brown":
+        skinTone = "dark";
+        hairColor = "dark brown";
+        break;
+      case "pink":
+        skinTone = "fair";
+        break;
+      case "black":
+        hairColor = "black";
+        break;
+      case "yellow":
+      case "orange":
+        hairColor = "blonde";
+        break;
+      case "red":
+        hairColor = "red";
+        break;
+      case "blue":
+        eyeColor = "blue";
+        break;
+      case "green":
+        eyeColor = "green";
+        break;
+      case "gray":
+        hairColor = "gray";
+        break;
+    }
+    
+    console.log(`Analysis complete - Skin: ${skinTone}, Hair: ${hairColor}, Eyes: ${eyeColor}`);
+    return { skinTone, hairColor, eyeColor };
+  } catch (error) {
+    console.error('Error extracting dominant colors:', error);
+    // Return default values if analysis fails
+    return { 
+      skinTone: "medium", 
+      hairColor: "brown", 
+      eyeColor: "brown" 
+    };
   }
 };
 
