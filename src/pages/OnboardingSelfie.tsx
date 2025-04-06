@@ -20,6 +20,11 @@ const OnboardingSelfie = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Reset the file input value to ensure we can select the same file again
+      if (e.target) {
+        e.target.value = '';
+      }
+      
       setSelectedFile(file);
       const fileReader = new FileReader();
       fileReader.onload = () => {
@@ -56,21 +61,27 @@ const OnboardingSelfie = () => {
 
   const handleContinue = async () => {
     if (previewUrl) {
-      // Analyze the selfie with AI
-      const analysis = await analyzeSelfie();
-      
-      // Update user profile
-      setUserProfile({
-        selfieUrl: previewUrl,
-        skinTone: analysis.skinTone,
-        hairColor: analysis.hairColor,
-        eyeColor: analysis.eyeColor,
-        displayName,
-        region
-      });
-      
-      toast.success(`Profile created with ${analysis.skinTone} skin tone, ${analysis.hairColor} hair, and ${analysis.eyeColor} eyes!`);
-      navigate("/wardrobe/add");
+      try {
+        // Analyze the selfie with AI
+        const analysis = await analyzeSelfie();
+        
+        // Update user profile
+        setUserProfile({
+          selfieUrl: previewUrl,
+          skinTone: analysis.skinTone,
+          hairColor: analysis.hairColor,
+          eyeColor: analysis.eyeColor,
+          displayName,
+          region
+        });
+        
+        toast.success(`Profile created with ${analysis.skinTone} skin tone, ${analysis.hairColor} hair, and ${analysis.eyeColor} eyes!`);
+        navigate("/wardrobe/add");
+      } catch (error) {
+        console.error("Error analyzing selfie:", error);
+        toast.error("There was a problem analyzing your selfie. Please try again.");
+        setIsAnalyzing(false);
+      }
     }
   };
 
