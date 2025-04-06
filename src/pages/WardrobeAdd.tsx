@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Camera, Upload, Plus, X, Sparkles, Image, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -104,10 +105,10 @@ const WardrobeAdd = () => {
     const loadClassifier = async () => {
       try {
         setClassifierLoading(true);
+        // Remove the "quantized" option which is causing the TypeScript error
         const model = await pipeline(
           "image-classification",
-          "Xenova/fashion-classifier-v1", 
-          { quantized: true }
+          "Xenova/fashion-classifier-v1"
         );
         setClassifier(model);
         setClassifierLoading(false);
