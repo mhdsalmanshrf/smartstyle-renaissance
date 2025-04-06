@@ -1,3 +1,4 @@
+
 // Function to extract dominant colors from selfie image
 export const extractDominantColors = async (imageUrl: string) => {
   // In a real app, this would use a computer vision API
@@ -27,4 +28,32 @@ export const extractDominantColors = async (imageUrl: string) => {
       resolve(analysis);
     }, 1500); // Simulate processing time
   });
+};
+
+// Load an image from a file or blob
+export const loadImage = (file: File | Blob): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+};
+
+// Function to detect the dominant color of an outfit
+export const detectOutfitColor = async (img: HTMLImageElement): Promise<string> => {
+  // In a real app, this would use image processing to detect the dominant color
+  // For this demo, we'll simulate color detection with a random selection
+  
+  const colors = [
+    "red", "blue", "green", "yellow", "black", 
+    "white", "purple", "pink", "orange", "brown",
+    "gray", "navy", "beige", "teal", "maroon"
+  ];
+  
+  // Simulate processing time
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  // Return a random color
+  return colors[Math.floor(Math.random() * colors.length)];
 };
