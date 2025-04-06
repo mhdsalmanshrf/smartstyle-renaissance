@@ -1,59 +1,73 @@
 
-// Function to extract dominant colors from selfie image
-export const extractDominantColors = async (imageUrl: string) => {
-  // In a real app, this would use a computer vision API
-  // For now we'll fake the analysis with a timed promise
-  
-  return new Promise<{
-    skinTone: string;
-    hairColor: string;
-    eyeColor: string;
-  }>(resolve => {
-    console.log("Analyzing image:", imageUrl);
-    setTimeout(() => {
-      // These would be detected by AI in a real app
-      // We'll use a simple random selection for demo purposes
-      
-      const skinTones = ["fair", "light", "medium", "olive", "brown", "dark"];
-      const hairColors = ["black", "brown", "blonde", "red", "gray", "white"];
-      const eyeColors = ["brown", "blue", "green", "hazel", "gray"];
-      
-      const analysis = {
-        skinTone: skinTones[Math.floor(Math.random() * skinTones.length)],
-        hairColor: hairColors[Math.floor(Math.random() * hairColors.length)],
-        eyeColor: eyeColors[Math.floor(Math.random() * eyeColors.length)]
-      };
-      
-      console.log("Analysis complete:", analysis);
-      resolve(analysis);
-    }, 1500); // Simulate processing time
-  });
-};
+// This is a mock implementation of background removal and color analysis
+// In a real application, this would use ML models or APIs
 
-// Load an image from a file or blob
-export const loadImage = (file: File | Blob): Promise<HTMLImageElement> => {
+export interface DominantColors {
+  skinTone: string;
+  hairColor: string;
+  eyeColor: string;
+}
+
+export const loadImage = async (src: string): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
+    img.onerror = (err) => reject(err);
+    img.src = src;
   });
 };
 
-// Function to detect the dominant color of an outfit
-export const detectOutfitColor = async (img: HTMLImageElement): Promise<string> => {
-  // In a real app, this would use image processing to detect the dominant color
-  // For this demo, we'll simulate color detection with a random selection
+export const detectOutfitColor = async (imageUrl: string): Promise<string> => {
+  // Mock implementation - in a real app this would analyze the image
+  // and return the actual dominant color
+  const colors = ["blue", "green", "red", "black", "white", "purple", "yellow"];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
+export const extractDominantColors = async (
+  imageUrl: string
+): Promise<DominantColors> => {
+  // In a real application, this would use computer vision to analyze the image
+  // For this demo, we'll return mock values
   
-  const colors = [
-    "red", "blue", "green", "yellow", "black", 
-    "white", "purple", "pink", "orange", "brown",
-    "gray", "navy", "beige", "teal", "maroon"
+  console.log("Analyzing image for dominant colors:", imageUrl);
+  
+  // Mock skin tones
+  const skinTones = [
+    "#FFE0BD", // Light
+    "#F1C27D", // Light Medium
+    "#E0AC69", // Medium
+    "#C68642", // Medium Dark
+    "#8D5524", // Dark
+  ];
+  
+  // Mock hair colors
+  const hairColors = [
+    "#090806", // Black
+    "#2C222B", // Dark Brown
+    "#71635A", // Brown
+    "#B7A69E", // Light Brown
+    "#D6C4C2", // Blonde
+    "#DCDCDC", // Grey/Silver
+    "#B55239", // Red
+  ];
+  
+  // Mock eye colors
+  const eyeColors = [
+    "#634E34", // Brown
+    "#9D9101", // Amber
+    "#337CCF", // Blue
+    "#2D5D56", // Green
+    "#A47551", // Hazel
   ];
   
   // Simulate processing time
-  await new Promise(resolve => setTimeout(resolve, 800));
+  await new Promise((resolve) => setTimeout(resolve, 300));
   
-  // Return a random color
-  return colors[Math.floor(Math.random() * colors.length)];
+  return {
+    skinTone: skinTones[Math.floor(Math.random() * skinTones.length)],
+    hairColor: hairColors[Math.floor(Math.random() * hairColors.length)],
+    eyeColor: eyeColors[Math.floor(Math.random() * eyeColors.length)],
+  };
 };
