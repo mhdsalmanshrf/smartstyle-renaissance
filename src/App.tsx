@@ -15,6 +15,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import AppLayout from "./components/AppLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 
+// Create Query Client outside of component to prevent recreation on render
 const queryClient = new QueryClient();
 
 const App = () => (
